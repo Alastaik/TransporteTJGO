@@ -1,5 +1,5 @@
 // Service Worker - Checklist Veicular TJGO
-const CACHE_NAME = 'checklist-tjgo-v5';
+const CACHE_NAME = 'checklist-tjgo-v6';
 
 // Usando caminhos relativos de forma compatível com GitHub Pages
 const ASSETS = [
@@ -13,7 +13,7 @@ const ASSETS = [
   './js/pdf-generator.js',
   './libs/jspdf.umd.min.js',
   './manifest.json',
-  './brasao.png'
+  './brasao.png?v=2'
 ];
 
 // Install: cache all assets
@@ -48,7 +48,7 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(event.request).then(cached => {
+    caches.match(event.request, { ignoreSearch: true }).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
         if (response && response.status === 200 && response.type === 'basic') {
