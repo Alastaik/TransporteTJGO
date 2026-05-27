@@ -50,6 +50,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   restaurarAssinatura();
   restaurarModo();
 
+  // Setup colors for Entrada/Saída
+  setupCorMovimentacao('movimentacaoTipo');
+  setupCorMovimentacao('movimentacaoTipo_emp');
+
   // Activate auto-save
   ativarAutoSave();
 
@@ -371,7 +375,34 @@ function setModo(modo) {
     pdfSimples.classList.add('hidden');
     pdfDuplo.classList.remove('hidden');
     alternarAba(abaAtiva);
+    copiarDadosParaEmprestimo();
   }
+}
+
+function copiarDadosParaEmprestimo() {
+  const campos = [
+    { from: 'dadosUnidade', to: 'dadosUnidade_emp' },
+    { from: 'dadosDestino', to: 'dadosDestino_emp' },
+    { from: 'dadosObjetivo', to: 'dadosObjetivo_emp' },
+    { from: 'placaVeiculo', to: 'placaVeiculo_emp' },
+    { from: 'veiculoNome', to: 'veiculoNome_emp' },
+    { from: 'veiculoMarca', to: 'veiculoMarca_emp' },
+    { from: 'veiculoAno', to: 'veiculoAno_emp' },
+    { from: 'veiculoMotor', to: 'veiculoMotor_emp' },
+    { from: 'veiculoKM', to: 'veiculoKM_emp' },
+    { from: 'veiculoCor', to: 'veiculoCor_emp' },
+    { from: 'placaDescaracterizada', to: 'placaDescaracterizada_emp' }
+  ];
+
+  campos.forEach(c => {
+    const elFrom = document.getElementById(c.from);
+    const elTo = document.getElementById(c.to);
+    // Só copia se o destino estiver vazio e o original tiver valor
+    if (elFrom && elTo && !elTo.value && elFrom.value) {
+      elTo.value = elFrom.value;
+      salvarCampo(c.to, elTo.value);
+    }
+  });
 }
 
 function alternarAba(aba) {
@@ -458,4 +489,28 @@ function enviarWhatsApp() {
 Status da vistoria finalizado e salvo no dispositivo!`;
 
   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
+}
+
+// ============================================
+// COR MOVIMENTACAO (ENTRADA/SAIDA)
+// ============================================
+function setupCorMovimentacao(selectId) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  
+  const updateColor = () => {
+    if (select.value === 'Entrada') {
+      select.style.backgroundColor = 'var(--azul-tjgo)';
+      select.style.color = 'white';
+    } else if (select.value === 'Saída') {
+      select.style.backgroundColor = 'var(--cinza-500)';
+      select.style.color = 'white';
+    } else {
+      select.style.backgroundColor = '';
+      select.style.color = '';
+    }
+  };
+  
+  select.addEventListener('change', updateColor);
+  updateColor(); // Initial call
 }
