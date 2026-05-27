@@ -70,6 +70,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   // Setup placa search for both forms
   setupPlacaSearch('placaVeiculo', '');
   setupPlacaSearch('placaVeiculo_emp', '_emp');
+
+  // Setup Auto Sync from Oficial to Emprestimo
+  setupAutoSync();
 });
 
 // ============================================
@@ -235,6 +238,28 @@ function marcarItem(botao, tipo) {
       localStorage.removeItem(`btn-${idx}`);
     }
   }
+
+  // Auto-sync para empréstimo
+  if (!idx.endsWith('_emp')) {
+    const targetIdx = idx + '_emp';
+    const targetGrid = document.querySelector(`.btn-grid[data-item-idx="${targetIdx}"]`);
+    if (targetGrid) {
+      const targetBtns = targetGrid.querySelectorAll('.check-btn');
+      let targetBotao;
+      if (tipo === 'sim') targetBotao = targetBtns[0];
+      else if (tipo === 'nao') targetBotao = targetBtns[1];
+      else if (tipo === 'dan') targetBotao = targetBtns[2];
+      
+      if (targetBotao) {
+         const currentStatus = obterCampo(`btn-${idx}`);
+         const targetStatus = obterCampo(`btn-${targetIdx}`);
+         
+         if (currentStatus !== targetStatus) {
+            marcarItem(targetBotao, tipo);
+         }
+      }
+    }
+  }
 }
 
 function restaurarBotoesChecklist(formId) {
@@ -264,6 +289,14 @@ function selecionarCombustivel(el, valor, formId) {
   const hidden = document.getElementById(`valorCombustivel${suffix}`);
   if (hidden) hidden.value = valor;
   salvarCampo(`valorCombustivel${suffix}`, valor);
+
+  // Auto-sync para empréstimo
+  if (formId === 'oficial') {
+      const targetEl = document.querySelector(`#form-emprestimo .fuel-level[data-fuel="${valor}"]`);
+      if (targetEl) {
+          selecionarCombustivel(targetEl, valor, 'emprestimo');
+      }
+  }
 }
 
 function restaurarCombustivel(formId) {
@@ -384,29 +417,54 @@ function setModo(modo) {
 }
 
 function copiarDadosParaEmprestimo() {
-  const campos = [
-    { from: 'dadosUnidade', to: 'dadosUnidade_emp' },
-    { from: 'dadosDestino', to: 'dadosDestino_emp' },
-    { from: 'dadosObjetivo', to: 'dadosObjetivo_emp' },
-    { from: 'placaVeiculo', to: 'placaVeiculo_emp' },
-    { from: 'veiculoNome', to: 'veiculoNome_emp' },
-    { from: 'veiculoMarca', to: 'veiculoMarca_emp' },
-    { from: 'veiculoAno', to: 'veiculoAno_emp' },
-    { from: 'veiculoMotor', to: 'veiculoMotor_emp' },
-    { from: 'veiculoKM', to: 'veiculoKM_emp' },
-    { from: 'veiculoCor', to: 'veiculoCor_emp' },
-    { from: 'placaDescaracterizada', to: 'placaDescaracterizada_emp' }
-  ];
+  const formOficial = document.getElementById('form-oficial');
+  if (!formOficial) return;
 
-  campos.forEach(c => {
-    const elFrom = document.getElementById(c.from);
-    const elTo = document.getElementById(c.to);
-    // Só copia se o destino estiver vazio e o original tiver valor
-    if (elFrom && elTo && !elTo.value && elFrom.value) {
-      elTo.value = elFrom.value;
-      salvarCampo(c.to, elTo.value);
+  const inputs = formOficial.querySelectorAll('input, textarea, select');
+  inputs.forEach(el => {
+    if (!el || !el.id) return;
+    if (el.id.startsWith('movimentacao')) return;
+
+    const targetId = el.id + '_emp';
+    const targetEl = document.getElementById(targetId);
+
+    if (targetEl && !targetEl.value && el.value) {
+      targetEl.value = el.value;
+      salvarCampo(targetId, el.value);
+      if (targetEl.classList.contains('auto-expand')) {
+        targetEl.style.height = '';
+        targetEl.style.height = targetEl.scrollHeight + 'px';
+      }
     }
   });
+
+  // Checklist
+  document.querySelectorAll('#form-oficial .btn-grid').forEach(grid => {
+    const idx = grid.getAttribute('data-item-idx');
+    if (!idx.endsWith('_emp')) {
+       const status = obterCampo(`btn-${idx}`);
+       const targetStatus = obterCampo(`btn-${idx}_emp`);
+       if (status && !targetStatus) {
+         const targetGrid = document.querySelector(`.btn-grid[data-item-idx="${idx}_emp"]`);
+         if (targetGrid) {
+            const btns = targetGrid.querySelectorAll('.check-btn');
+            if (status === 'sim') marcarItem(btns[0], 'sim');
+            else if (status === 'nao') marcarItem(btns[1], 'nao');
+            else if (status === 'dan') marcarItem(btns[2], 'dan');
+         }
+       }
+    }
+  });
+
+  // Combustível
+  const fuel = obterCampo('valorCombustivel');
+  const fuelEmp = obterCampo('valorCombustivel_emp');
+  if (fuel && !fuelEmp) {
+      const targetEl = document.querySelector(`#form-emprestimo .fuel-level[data-fuel="${fuel}"]`);
+      if (targetEl) {
+          selecionarCombustivel(targetEl, fuel, 'emprestimo');
+      }
+  }
 }
 
 function alternarAba(aba) {
@@ -517,4 +575,39 @@ function setupCorMovimentacao(selectId) {
   
   select.addEventListener('change', updateColor);
   updateColor(); // Initial call
+}
+
+// ============================================
+// AUTO SYNC OFICIAL -> EMPRESTIMO
+// ============================================
+function setupAutoSync() {
+  const formOficial = document.getElementById('form-oficial');
+  if (!formOficial) return;
+
+  const syncEvent = (e) => {
+    const el = e.target;
+    if (!el || !el.id) return;
+    
+    // Ignorar entrada/saída
+    if (el.id.startsWith('movimentacao')) return;
+
+    const targetId = el.id + '_emp';
+    const targetEl = document.getElementById(targetId);
+
+    if (targetEl) {
+      targetEl.value = el.value;
+      salvarCampo(targetId, el.value);
+
+      if (targetEl.classList.contains('auto-expand')) {
+        targetEl.style.height = '';
+        targetEl.style.height = targetEl.scrollHeight + 'px';
+      }
+      
+      // Dispatch input para atualizar buscarPlaca etc
+      targetEl.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
+
+  formOficial.addEventListener('input', syncEvent);
+  formOficial.addEventListener('change', syncEvent);
 }
