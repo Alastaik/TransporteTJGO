@@ -1,5 +1,5 @@
 // Service Worker - Checklist Veicular TJGO
-const CACHE_NAME = 'checklist-tjgo-v4';
+const CACHE_NAME = 'checklist-tjgo-v5';
 
 // Usando caminhos relativos de forma compatível com GitHub Pages
 const ASSETS = [
