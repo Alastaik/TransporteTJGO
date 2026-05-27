@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema de Checklist Veicular do Tribunal de Justiça do Estado de Goiás">
+  <meta name="theme-color" content="#003b8e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <title>Checklist Veicular — TJGO</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Gerando PDF...</div>
+</div>
+
+<div class="container">
+
+  <!-- ============ HEADER ============ -->
+  <div id="mainTopbar" class="topbar">
+    <div class="title-main">PODER JUDICIÁRIO</div>
+    <div class="subtitle">Tribunal de Justiça do Estado de Goiás</div>
+    <div id="tituloChecklist" class="check-title">CHECKLIST VEICULAR</div>
+  </div>
+
+  <!-- ============ 1. RESPONSÁVEL ============ -->
+  <div class="card">
+    <h2><span class="section-icon">👤</span> 1. RESPONSÁVEL PELA VISTORIA</h2>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="field">
+        <label>Selecione o Vistoriador</label>
+        <select id="seletorVistoriador" class="save-state" onchange="atualizarVistoriador(this.value)">
+          <option value="">-- Selecione um Vistoriador --</option>
+          <option value="Fernando">FERNANDO LACERDA SILVA (Matrícula: 5055920)</option>
+          <option value="Vinicius">VINICIUS TALES AZEVEDO COSTA (Matrícula: 02588)</option>
+          <option value="Jordana">JORDANA FERNANDES RODRIGUES DE SOUSA (Matrícula: 02363)</option>
+          <option value="Outro">Outro (Digitar Manualmente)</option>
+        </select>
+      </div>
+      <div id="camposManuaisVistoriador" style="display:none;flex-direction:column;gap:10px;background:var(--cinza-100);padding:12px;border:1px dashed var(--cinza-300);border-radius:8px;">
+        <div class="field">
+          <label>Nome do Vistoriador (Manual)</label>
+          <input type="text" id="nomeVistoriador" class="save-state" placeholder="Nome completo">
+        </div>
+        <div class="field">
+          <label>Matrícula / ID (Manual)</label>
+          <input type="text" id="matriculaVistoriador" class="save-state" placeholder="Matrícula">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODO DE OPERAÇÃO ============ -->
+  <div class="card" id="cardFluxoTrabalho">
+    <h2><span class="section-icon">🔄</span> MODO DE OPERAÇÃO</h2>
+    <p class="modo-descricao">Escolha o formato de checklist para este procedimento:</p>
+    <div class="modo-btns">
+      <button type="button" id="btnModoSimples" class="modo-btn simples" onclick="setModo('simples')">🚗 VISTORIA SIMPLES (1 VEÍCULO)</button>
+      <button type="button" id="btnModoDuplo" class="modo-btn inactive" onclick="setModo('troca')">🔄 TROCA / EMPRÉSTIMO (2 VEÍCULOS SEPARADOS)</button>
+    </div>
+  </div>
+
+  <!-- ============ ABAS (só no modo troca) ============ -->
+  <div id="abasControle" class="abas-controle no-print">
+    <button type="button" id="abaOficial" class="aba-btn oficial" onclick="alternarAba('oficial')">🏛️ 1. VEÍCULO OFICIAL</button>
+    <button type="button" id="abaEmprestimo" class="aba-btn inactive" onclick="alternarAba('emprestimo')">🔑 2. VEÍCULO DE EMPRÉSTIMO</button>
+  </div>
+
+  <!-- =========================================================== -->
+  <!-- ============ FORM: VEÍCULO OFICIAL ======================== -->
+  <!-- =========================================================== -->
+  <div id="form-oficial">
+
+    <div class="card">
+      <h2><span class="section-icon">🗺️</span> 2. DADOS DA VIAGEM</h2>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="field"><label>Unidade</label><textarea id="dadosUnidade" rows="1" class="auto-expand save-state" placeholder="Digite a unidade" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea></div>
+        <div class="field"><label>Destino</label><textarea id="dadosDestino" rows="1" class="auto-expand save-state" placeholder="Digite o destino" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea></div>
+        <div class="field"><label>Objetivo</label><textarea id="dadosObjetivo" rows="1" class="auto-expand save-state" placeholder="Digite o objetivo" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-icon">🚗</span> 3. DADOS DO VEÍCULO</h2>
+      <div class="grid" style="margin-bottom:12px;background:var(--cinza-100);padding:12px;border-radius:10px;border:1.5px solid var(--cinza-200);">
+        <div class="field full-width">
+          <label style="color:var(--azul-tjgo);font-size:14px;">🔎 Digite a Placa para Buscar:</label>
+          <input id="placaVeiculo" class="save-state" placeholder="Ex: RCH1B48" style="font-weight:700;border:2px solid var(--azul-tjgo);text-transform:uppercase;">
+        </div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>Veículo / Nome</label><input id="veiculoNome" class="save-state"></div>
+        <div class="field"><label>Marca</label><input id="veiculoMarca" class="save-state"></div>
+        <div class="field"><label>Ano / Modelo</label><input id="veiculoAno" class="save-state"></div>
+        <div class="field"><label>Motor</label><input id="veiculoMotor" class="save-state"></div>
+        <div class="field"><label>KM</label><input id="veiculoKM" class="save-state"></div>
+        <div class="field"><label>Cor</label><input id="veiculoCor" class="save-state"></div>
+      </div>
+      <div class="grid mt-10">
+        <div class="field"><label>Placa descaracterizada</label><input id="placaDescaracterizada" class="save-state"></div>
+      </div>
+      <div class="fuel-box">
+        <label>⛽ Nível do Combustível:</label>
+        <div class="fuel-gauge">
+          <div class="fuel-level" data-fuel="Vazio" onclick="selecionarCombustivel(this,'Vazio','oficial')">Vazio</div>
+          <div class="fuel-level" data-fuel="1/4" onclick="selecionarCombustivel(this,'1/4','oficial')">¼</div>
+          <div class="fuel-level" data-fuel="1/2" onclick="selecionarCombustivel(this,'1/2','oficial')">½</div>
+          <div class="fuel-level" data-fuel="3/4" onclick="selecionarCombustivel(this,'3/4','oficial')">¾</div>
+          <div class="fuel-level" data-fuel="Cheio" onclick="selecionarCombustivel(this,'Cheio','oficial')">Cheio</div>
+        </div>
+        <input type="hidden" id="valorCombustivel" class="save-state">
+      </div>
+      <div class="box" style="margin-top:14px;">
+        <h3>📋 Entrada / Saída</h3>
+        <select id="movimentacaoTipo" class="save-state">
+          <option value="">-- Escolha --</option>
+          <option value="Entrada">Entrada</option>
+          <option value="Saída">Saída</option>
+        </select>
+        <div class="grid mt-10">
+          <div class="field"><label>Data</label><input type="date" id="movimentacaoData" class="save-state"></div>
+          <div class="field"><label>Hora</label><input type="time" id="movimentacaoHora" class="save-state"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-icon">✅</span> 4. CHECKLIST</h2>
+      <table class="checklist-table">
+        <thead>
+          <tr><th>ITEM</th><th>AVALIAÇÃO</th><th>DEFEITOS / STATUS</th></tr>
+        </thead>
+        <tbody id="checklistBody-oficial"></tbody>
+      </table>
+      <div class="field mt-10">
+        <label>Outros defeitos (inconformidades não listadas):</label>
+        <textarea id="outrosDefeitos" class="save-state" rows="2" placeholder="Descreva detalhadamente..."></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-icon">📸</span> 5. FOTOS GERAIS</h2>
+      <div class="photos" id="geral-oficial"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-icon">⚠️</span> 6. FOTOS DE AVARIAS</h2>
+      <div class="photos" id="avarias-oficial"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="section-icon">📝</span> 7. OBSERVAÇÕES</h2>
+      <div class="field"><label>Observações Gerais</label><textarea id="obsGerais" class="save-state" rows="3"></textarea></div>
+      <div class="field mt-10"><label>Serviços realizados</label><textarea id="servicosRealizados" class="save-state" rows="3"></textarea></div>
+    </div>
+
+  </div><!-- /form-oficial -->
+
+  <!-- =========================================================== -->
+  <!-- ============ FORM: VEÍCULO DE EMPRÉSTIMO ================== -->
+  <!-- =========================================================== -->
+  <div id="form-emprestimo" class="hidden">
+
+    <div class="card" style="border-left:4px solid var(--verde);">
+      <h2 style="color:var(--verde);"><span class="section-icon">🗺️</span> 2. DADOS DA VIAGEM (Empréstimo)</h2>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="field"><label>Unidade</label><textarea id="dadosUnidade_emp" rows="1" class="auto-expand save-state" placeholder="Digite a unidade" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea></div>
+        <div class="field"><label>Destino</label><textarea id="dadosDestino_emp" rows="1" class="auto-expand save-state" placeholder="Digite o destino" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea></div>
+        <div class="field"><label>Objetivo</label><textarea id="dadosObjetivo_emp" rows="1" class="auto-expand save-state" placeholder="Digite o objetivo" oninput="this.style.height='';this.style.height=this.scrollHeight+'px'"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--verde);">
+      <h2 style="color:var(--verde);"><span class="section-icon">🔑</span> 3. DADOS DO VEÍCULO (Empréstimo)</h2>
+      <div class="grid" style="margin-bottom:12px;background:#f0fdf4;padding:12px;border-radius:10px;border:1.5px solid #bbf7d0;">
+        <div class="field full-width">
+          <label style="color:var(--verde);font-size:14px;">🔎 Digite a Placa do Veículo de Empréstimo:</label>
+          <input id="placaVeiculo_emp" class="save-state" placeholder="Ex: RCH1B48" style="font-weight:700;border:2px solid var(--verde);text-transform:uppercase;">
+        </div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>Veículo / Nome</label><input id="veiculoNome_emp" class="save-state"></div>
+        <div class="field"><label>Marca</label><input id="veiculoMarca_emp" class="save-state"></div>
+        <div class="field"><label>Ano / Modelo</label><input id="veiculoAno_emp" class="save-state"></div>
+        <div class="field"><label>Motor</label><input id="veiculoMotor_emp" class="save-state"></div>
+        <div class="field"><label>KM</label><input id="veiculoKM_emp" class="save-state"></div>
+        <div class="field"><label>Cor</label><input id="veiculoCor_emp" class="save-state"></div>
+      </div>
+      <div class="grid mt-10">
+        <div class="field"><label>Placa descaracterizada</label><input id="placaDescaracterizada_emp" class="save-state"></div>
+      </div>
+      <div class="fuel-box">
+        <label style="color:var(--verde);">⛽ Nível do Combustível (Empréstimo):</label>
+        <div class="fuel-gauge" style="border-color:var(--verde);">
+          <div class="fuel-level" data-fuel="Vazio" onclick="selecionarCombustivel(this,'Vazio','emprestimo')">Vazio</div>
+          <div class="fuel-level" data-fuel="1/4" onclick="selecionarCombustivel(this,'1/4','emprestimo')">¼</div>
+          <div class="fuel-level" data-fuel="1/2" onclick="selecionarCombustivel(this,'1/2','emprestimo')">½</div>
+          <div class="fuel-level" data-fuel="3/4" onclick="selecionarCombustivel(this,'3/4','emprestimo')">¾</div>
+          <div class="fuel-level" data-fuel="Cheio" onclick="selecionarCombustivel(this,'Cheio','emprestimo')">Cheio</div>
+        </div>
+        <input type="hidden" id="valorCombustivel_emp" class="save-state">
+      </div>
+      <div class="box" style="margin-top:14px;border-color:#bbf7d0;">
+        <h3>📋 Entrada / Saída (Empréstimo)</h3>
+        <select id="movimentacaoTipo_emp" class="save-state">
+          <option value="">-- Escolha --</option>
+          <option value="Entrada">Entrada</option>
+          <option value="Saída">Saída</option>
+        </select>
+        <div class="grid mt-10">
+          <div class="field"><label>Data</label><input type="date" id="movimentacaoData_emp" class="save-state"></div>
+          <div class="field"><label>Hora</label><input type="time" id="movimentacaoHora_emp" class="save-state"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--verde);">
+      <h2 style="color:var(--verde);"><span class="section-icon">✅</span> 4. CHECKLIST (Empréstimo)</h2>
+      <table class="checklist-table">
+        <thead>
+          <tr><th>ITEM</th><th>AVALIAÇÃO</th><th>DEFEITOS / STATUS</th></tr>
+        </thead>
+        <tbody id="checklistBody-emprestimo"></tbody>
+      </table>
+      <div class="field mt-10">
+        <label>Outros defeitos (Empréstimo):</label>
+        <textarea id="outrosDefeitos_emp" class="save-state" rows="2" placeholder="Descreva detalhadamente..."></textarea>
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--verde);">
+      <h2 style="color:var(--verde);"><span class="section-icon">📸</span> 5. FOTOS GERAIS (Empréstimo)</h2>
+      <div class="photos" id="geral-emprestimo"></div>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--verde);">
+      <h2 style="color:var(--verde);"><span class="section-icon">⚠️</span> 6. FOTOS DE AVARIAS (Empréstimo)</h2>
+      <div class="photos" id="avarias-emprestimo"></div>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--verde);">
+      <h2 style="color:var(--verde);"><span class="section-icon">📝</span> 7. OBSERVAÇÕES (Empréstimo)</h2>
+      <div class="field"><label>Observações Gerais</label><textarea id="obsGerais_emp" class="save-state" rows="3"></textarea></div>
+      <div class="field mt-10"><label>Serviços realizados</label><textarea id="servicosRealizados_emp" class="save-state" rows="3"></textarea></div>
+    </div>
+
+  </div><!-- /form-emprestimo -->
+
+  <!-- ============ ASSINATURA (compartilhada) ============ -->
+  <div class="card">
+    <h2><span class="section-icon">✍️</span> ASSINATURA</h2>
+    <div style="text-align:center;margin-bottom:10px;">
+      <label style="font-weight:600;display:block;margin-bottom:6px;text-align:left;font-size:13px;">Clique no quadro para assinar:</label>
+      <img id="signaturePreview" class="signature-preview" onclick="openSign()" alt="Toque aqui para assinar">
+    </div>
+    <div class="grid">
+      <div class="field"><label>Nome do Condutor</label><input id="nomeCondutor" class="save-state"></div>
+      <div class="field"><label>Matrícula / CNH</label><input id="cnhCondutor" class="save-state"></div>
+    </div>
+  </div>
+
+  <!-- ============ PDF BUTTONS ============ -->
+  <div class="pdf-area no-print">
+    <p class="pdf-title">📥 SELECIONE O RELATÓRIO PARA GERAR:</p>
+
+    <!-- Modo Simples: 1 botão -->
+    <div id="pdfBtnSimples">
+      <button type="button" class="btn btn-azul" onclick="gerarPDF('vistoria')">📄 GERAR PDF DA VISTORIA</button>
+    </div>
+
+    <!-- Modo Troca: 2 botões -->
+    <div id="pdfBtnsDuplo" class="hidden">
+      <button type="button" class="btn btn-azul" onclick="gerarPDF('oficial')" style="margin-bottom:8px;">🔹 GERAR PDF — VEÍCULO OFICIAL</button>
+      <button type="button" class="btn btn-emprestimo" onclick="gerarPDF('emprestimo')">🔸 GERAR PDF — VEÍCULO DE EMPRÉSTIMO</button>
+    </div>
+  </div>
+
+  <button type="button" class="btn btn-blue no-print" onclick="enviarWhatsApp()" style="margin-top:12px;">💬 COMPARTILHAR NO WHATSAPP</button>
+  <button type="button" class="btn btn-red no-print" onclick="limparFormulario()" style="margin-top:8px;margin-bottom:20px;">🗑️ LIMPAR FORMULÁRIO (NOVO CHECKLIST)</button>
+
+</div><!-- /container -->
+
+<!-- ============ MODAL DE ASSINATURA ============ -->
+<div class="modal" id="signModal">
+  <div class="modal-content">
+    <h3>✍️ Assine no espaço abaixo:</h3>
+    <canvas id="signatureCanvas"></canvas>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="saveSign()">Salvar</button>
+      <button class="btn" style="background:var(--cinza-500);" onclick="clearSign()">Limpar</button>
+      <button class="btn btn-red" onclick="closeSign()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCRIPTS ============ -->
+<script src="libs/jspdf.umd.min.js"></script>
+<script src="js/vehicles.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/signature.js"></script>
+<script src="js/app.js"></script>
+<script src="js/pdf-generator.js"></script>
+
+<!-- PWA Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error:', err));
+  }
+</script>
+
+</body>
+</html>
