@@ -31,7 +31,11 @@ const VISTORIADORES = {
 // INITIALIZATION
 // ============================================
 window.addEventListener('DOMContentLoaded', async () => {
-  await initDB();
+  try {
+    await initDB();
+  } catch(e) {
+    console.warn("IndexedDB não pôde ser iniciado, fotos podem não ser salvas.", e);
+  }
   
   // Build dynamic content for both forms
   buildChecklistTable('oficial');
