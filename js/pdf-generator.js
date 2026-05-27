@@ -259,9 +259,11 @@ async function gerarPDF(tipoVeiculo) {
     }
 
     // ============ PHOTOS ============
-    const formEl = document.getElementById(formId);
-    if (formEl) {
-      const photoImages = formEl.querySelectorAll('.photo-box img');
+    function drawPhotosGrid(containerId, sectionTitle) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+
+      const photoImages = container.querySelectorAll('.photo-box img');
       const validPhotos = [];
       photoImages.forEach((img, i) => {
         if (img.src && img.style.display !== 'none' && img.src.startsWith('data:')) {
@@ -273,7 +275,7 @@ async function gerarPDF(tipoVeiculo) {
       if (validPhotos.length > 0) {
         doc.addPage();
         y = margin;
-        drawSectionHeader('5. REGISTRO FOTOGRÁFICO');
+        drawSectionHeader(sectionTitle);
 
         const photoW = (contentW - 8) / 2;
         const photoH = 55;
@@ -312,13 +314,17 @@ async function gerarPDF(tipoVeiculo) {
       }
     }
 
+    const sufixoId = tipoVeiculo === 'emprestimo' ? 'emprestimo' : 'oficial';
+    drawPhotosGrid(`geral-${sufixoId}`, '5. FOTOS GERAIS');
+    drawPhotosGrid(`avarias-${sufixoId}`, '6. FOTOS DE AVARIAS');
+
     // ============ OBSERVAÇÕES ============
     const obs = getVal(`obsGerais${suffix}`);
     const servicos = getVal(`servicosRealizados${suffix}`);
 
     if (obs || servicos) {
       checkNewPage(30);
-      drawSectionHeader('6. OBSERVAÇÕES E SERVIÇOS');
+      drawSectionHeader('7. OBSERVAÇÕES E SERVIÇOS');
       
       if (obs) {
         doc.setFontSize(8);
@@ -342,7 +348,7 @@ async function gerarPDF(tipoVeiculo) {
 
     // ============ ASSINATURA ============
     checkNewPage(50);
-    drawSectionHeader('7. ASSINATURA DO CONDUTOR');
+    drawSectionHeader('8. ASSINATURA DO CONDUTOR');
 
     const nomeCondutor = getVal('nomeCondutor');
     const cnhCondutor = getVal('cnhCondutor');
