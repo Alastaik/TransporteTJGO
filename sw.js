@@ -36,7 +36,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch: cache-first strategy
+// Fetch: Network-First strategy (Resolve problemas de atualização para sempre)
 self.addEventListener('fetch', event => {
   // Ignora requisições que não sejam GET
   if (event.request.method !== 'GET') return;
@@ -48,20 +48,22 @@ self.addEventListener('fetch', event => {
   }
 
   event.respondWith(
-    caches.match(event.request, { ignoreSearch: true }).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      });
-    }).catch(() => {
-      // Fallback para index.html se estiver offline e for navegação
-      if (event.request.mode === 'navigate') {
-        return caches.match('./index.html');
+    fetch(event.request).then(response => {
+      // Quando online: pega da rede (sempre a versão mais nova) e salva no cache
+      if (response && response.status === 200 && response.type === 'basic') {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
       }
+      return response;
+    }).catch(() => {
+      // Quando offline: falhou a rede, busca do cache
+      return caches.match(event.request, { ignoreSearch: true }).then(cached => {
+        if (cached) return cached;
+        // Fallback de navegação
+        if (event.request.mode === 'navigate') {
+          return caches.match('./index.html');
+        }
+      });
     })
   );
 });

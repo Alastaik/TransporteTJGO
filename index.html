@@ -362,7 +362,20 @@
 <!-- PWA Service Worker -->
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error:', err));
+    // Adiciona timestamp para quebrar o cache HTTP do próprio SW
+    navigator.serviceWorker.register('sw.js?v=' + new Date().getTime())
+      .then(registration => {
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Força o recarregamento automático quando detectar que há um novo código
+              window.location.reload();
+            }
+          });
+        });
+      })
+      .catch(err => console.log('SW error:', err));
   }
   
   // Make signature preview container logic work
