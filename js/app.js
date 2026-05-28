@@ -265,27 +265,6 @@ function marcarItem(botao, tipo) {
     }
   }
 
-  // Auto-sync para empréstimo
-  if (!idx.endsWith('_emp')) {
-    const targetIdx = idx + '_emp';
-    const targetGrid = document.querySelector(`.btn-grid[data-item-idx="${targetIdx}"]`);
-    if (targetGrid) {
-      const targetBtns = targetGrid.querySelectorAll('.check-btn');
-      let targetBotao;
-      if (tipo === 'sim') targetBotao = targetBtns[0];
-      else if (tipo === 'nao') targetBotao = targetBtns[1];
-      else if (tipo === 'dan') targetBotao = targetBtns[2];
-      
-      if (targetBotao) {
-         const currentStatus = obterCampo(`btn-${idx}`);
-         const targetStatus = obterCampo(`btn-${targetIdx}`);
-         
-         if (currentStatus !== targetStatus) {
-            marcarItem(targetBotao, tipo);
-         }
-      }
-    }
-  }
 }
 
 function restaurarBotoesChecklist(formId) {
@@ -316,13 +295,6 @@ function selecionarCombustivel(el, valor, formId) {
   if (hidden) hidden.value = valor;
   salvarCampo(`valorCombustivel${suffix}`, valor);
 
-  // Auto-sync para empréstimo
-  if (formId === 'oficial') {
-      const targetEl = document.querySelector(`#form-emprestimo .fuel-level[data-fuel="${valor}"]`);
-      if (targetEl) {
-          selecionarCombustivel(targetEl, valor, 'emprestimo');
-      }
-  }
 }
 
 function restaurarCombustivel(formId) {
