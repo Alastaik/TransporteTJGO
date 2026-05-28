@@ -362,14 +362,15 @@
 <!-- PWA Service Worker -->
 <script>
   if ('serviceWorker' in navigator) {
-    // Adiciona timestamp para quebrar o cache HTTP do próprio SW
-    navigator.serviceWorker.register('sw.js?v=' + new Date().getTime())
+    // Registra o SW normalmente. O navegador já faz a verificação byte a byte em segundo plano.
+    navigator.serviceWorker.register('sw.js')
       .then(registration => {
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // Força o recarregamento automático quando detectar que há um novo código
+              // Evita loops infinitos garantindo que isso só rode quando há uma MUDANÇA real no código
+              console.log("Nova versão encontrada. Atualizando...");
               window.location.reload();
             }
           });
