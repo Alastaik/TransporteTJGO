@@ -80,8 +80,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 // ============================================
 function setupFieldSync() {
   const campos = [
-    'dadosUnidade', 'dadosDestino', 'dadosObjetivo', 
-    'movimentacaoTipo', 'movimentacaoData', 'movimentacaoHora'
+    'dadosUnidade', 'dadosDestino', 'dadosObjetivo'
   ];
 
   campos.forEach(id => {
@@ -241,7 +240,7 @@ function marcarItem(botao, tipo) {
   if (tipo === 'sim') {
     const wasActive = obterCampo(`btn-${idx}`) === 'sim';
     if (!wasActive) {
-      btnSim.classList.add('active-sim'); btnSim.textContent = '✔ V';
+      btnSim.classList.add('active-sim'); btnSim.textContent = 'SIM';
       salvarCampo(`btn-${idx}`, 'sim');
     } else {
       localStorage.removeItem(`btn-${idx}`);
@@ -249,7 +248,7 @@ function marcarItem(botao, tipo) {
   } else if (tipo === 'nao') {
     const wasActive = obterCampo(`btn-${idx}`) === 'nao';
     if (!wasActive) {
-      btnNao.classList.add('active-nao'); btnNao.textContent = '✖ X';
+      btnNao.classList.add('active-nao'); btnNao.textContent = 'NÃO';
       salvarCampo(`btn-${idx}`, 'nao');
     } else {
       localStorage.removeItem(`btn-${idx}`);
@@ -257,8 +256,8 @@ function marcarItem(botao, tipo) {
   } else if (tipo === 'dan') {
     const wasActive = obterCampo(`btn-${idx}`) === 'dan';
     if (!wasActive) {
-      btnDan.classList.add('active-dan'); btnDan.textContent = '⚠ D';
-      btnSim.classList.add('active-sim'); btnSim.textContent = '✔ V';
+      btnDan.classList.add('active-dan'); btnDan.textContent = 'DANIF.';
+      btnSim.classList.add('active-sim'); btnSim.textContent = 'SIM';
       salvarCampo(`btn-${idx}`, 'dan');
     } else {
       localStorage.removeItem(`btn-${idx}`);
@@ -274,11 +273,11 @@ function restaurarBotoesChecklist(formId) {
     const status = obterCampo(`btn-${idx}`);
     if (!status) return;
     const btns = grid.querySelectorAll('.check-btn');
-    if (status === 'sim') { btns[0].classList.add('active-sim'); btns[0].textContent = '✔ V'; }
-    else if (status === 'nao') { btns[1].classList.add('active-nao'); btns[1].textContent = '✖ X'; }
+    if (status === 'sim') { btns[0].classList.add('active-sim'); btns[0].textContent = 'SIM'; }
+    else if (status === 'nao') { btns[1].classList.add('active-nao'); btns[1].textContent = 'NÃO'; }
     else if (status === 'dan') {
-      btns[2].classList.add('active-dan'); btns[2].textContent = '⚠ D';
-      btns[0].classList.add('active-sim'); btns[0].textContent = '✔ V';
+      btns[2].classList.add('active-dan'); btns[2].textContent = 'DANIF.';
+      btns[0].classList.add('active-sim'); btns[0].textContent = 'SIM';
     }
   });
 }
@@ -488,12 +487,12 @@ function enviarWhatsApp() {
     return;
   }
 
-  const texto = `📌 *CHECKLIST VEICULAR TJGO CONCLUÍDO*
+  const texto = `*CHECKLIST VEICULAR TJGO CONCLUÍDO*
 
-👤 *Vistoriador:* ${vistoriador}
-🚗 *Veículo:* ${veiculo || '-'}
-🔢 *Placa:* ${placa || '-'}
-⛽ *Combustível:* ${combustivel}
+*Vistoriador:* ${vistoriador}
+*Veículo:* ${veiculo || '-'}
+*Placa:* ${placa || '-'}
+*Combustível:* ${combustivel}
 
 Status da vistoria finalizado e salvo no dispositivo!`;
 
