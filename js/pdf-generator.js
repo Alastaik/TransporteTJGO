@@ -79,6 +79,22 @@ async function gerarPDF(tipoVeiculo) {
     doc.setFillColor(...azul);
     doc.roundedRect(margin, y, contentW, 28, 3, 3, 'F');
     
+    // Add Brasão
+    const logoImg = document.querySelector('img[alt="Brasão TJGO"]');
+    if (logoImg && logoImg.complete && logoImg.naturalWidth > 0) {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = logoImg.naturalWidth;
+        canvas.height = logoImg.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(logoImg, 0, 0);
+        const logoBase64 = canvas.toDataURL("image/png");
+        doc.addImage(logoBase64, 'PNG', margin + 8, y + 4, 18, 20);
+      } catch (e) {
+        console.warn('Não foi possível adicionar o brasão ao PDF:', e);
+      }
+    }
+    
     // Title text
     doc.setTextColor(...branco);
     doc.setFontSize(16);
