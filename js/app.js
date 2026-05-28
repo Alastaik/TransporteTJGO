@@ -71,9 +71,35 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupPlacaSearch('placaVeiculo', '');
   setupPlacaSearch('placaVeiculo_emp', '_emp');
 
-  // Setup Auto Sync from Oficial to Emprestimo
-  setupAutoSync();
+  // Setup field synchronization
+  setupFieldSync();
 });
+
+// ============================================
+// FIELD SYNCHRONIZATION (Shared Data)
+// ============================================
+function setupFieldSync() {
+  const campos = [
+    'dadosUnidade', 'dadosDestino', 'dadosObjetivo', 
+    'movimentacaoTipo', 'movimentacaoData', 'movimentacaoHora'
+  ];
+
+  campos.forEach(id => {
+    const elOficial = document.getElementById(id);
+    const elEmp = document.getElementById(id + '_emp');
+    
+    if (elOficial && elEmp) {
+      elOficial.addEventListener('input', () => {
+        elEmp.value = elOficial.value;
+        salvarCampo(id + '_emp', elOficial.value);
+      });
+      elEmp.addEventListener('input', () => {
+        elOficial.value = elEmp.value;
+        salvarCampo(id, elEmp.value);
+      });
+    }
+  });
+}
 
 // ============================================
 // CHECKLIST TABLE BUILDER
@@ -412,60 +438,9 @@ function setModo(modo) {
     pdfSimples.classList.add('hidden');
     pdfDuplo.classList.remove('hidden');
     alternarAba(abaAtiva);
-    copiarDadosParaEmprestimo();
   }
 }
 
-function copiarDadosParaEmprestimo() {
-  const formOficial = document.getElementById('form-oficial');
-  if (!formOficial) return;
-
-  const inputs = formOficial.querySelectorAll('input, textarea, select');
-  inputs.forEach(el => {
-    if (!el || !el.id) return;
-    if (el.id.startsWith('movimentacao')) return;
-
-    const targetId = el.id + '_emp';
-    const targetEl = document.getElementById(targetId);
-
-    if (targetEl && !targetEl.value && el.value) {
-      targetEl.value = el.value;
-      salvarCampo(targetId, el.value);
-      if (targetEl.classList.contains('auto-expand')) {
-        targetEl.style.height = '';
-        targetEl.style.height = targetEl.scrollHeight + 'px';
-      }
-    }
-  });
-
-  // Checklist
-  document.querySelectorAll('#form-oficial .btn-grid').forEach(grid => {
-    const idx = grid.getAttribute('data-item-idx');
-    if (!idx.endsWith('_emp')) {
-       const status = obterCampo(`btn-${idx}`);
-       const targetStatus = obterCampo(`btn-${idx}_emp`);
-       if (status && !targetStatus) {
-         const targetGrid = document.querySelector(`.btn-grid[data-item-idx="${idx}_emp"]`);
-         if (targetGrid) {
-            const btns = targetGrid.querySelectorAll('.check-btn');
-            if (status === 'sim') marcarItem(btns[0], 'sim');
-            else if (status === 'nao') marcarItem(btns[1], 'nao');
-            else if (status === 'dan') marcarItem(btns[2], 'dan');
-         }
-       }
-    }
-  });
-
-  // Combustível
-  const fuel = obterCampo('valorCombustivel');
-  const fuelEmp = obterCampo('valorCombustivel_emp');
-  if (fuel && !fuelEmp) {
-      const targetEl = document.querySelector(`#form-emprestimo .fuel-level[data-fuel="${fuel}"]`);
-      if (targetEl) {
-          selecionarCombustivel(targetEl, fuel, 'emprestimo');
-      }
-  }
-}
 
 function alternarAba(aba) {
   abaAtiva = aba;
@@ -577,37 +552,3 @@ function setupCorMovimentacao(selectId) {
   updateColor(); // Initial call
 }
 
-// ============================================
-// AUTO SYNC OFICIAL -> EMPRESTIMO
-// ============================================
-function setupAutoSync() {
-  const formOficial = document.getElementById('form-oficial');
-  if (!formOficial) return;
-
-  const syncEvent = (e) => {
-    const el = e.target;
-    if (!el || !el.id) return;
-    
-    // Ignorar entrada/saída
-    if (el.id.startsWith('movimentacao')) return;
-
-    const targetId = el.id + '_emp';
-    const targetEl = document.getElementById(targetId);
-
-    if (targetEl) {
-      targetEl.value = el.value;
-      salvarCampo(targetId, el.value);
-
-      if (targetEl.classList.contains('auto-expand')) {
-        targetEl.style.height = '';
-        targetEl.style.height = targetEl.scrollHeight + 'px';
-      }
-      
-      // Dispatch input para atualizar buscarPlaca etc
-      targetEl.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-  };
-
-  formOficial.addEventListener('input', syncEvent);
-  formOficial.addEventListener('change', syncEvent);
-}
