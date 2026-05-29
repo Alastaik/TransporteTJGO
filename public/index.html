@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Sistema de Gestão de Transporte — Tribunal de Justiça do Estado de Goiás">
+  <meta name="theme-color" content="#0a1628">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <title>Transporte TJGO</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Carregando...</div>
+</div>
+
+<!-- Toast container -->
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- Online/Offline indicator -->
+<div id="connectionStatus" class="connection-status">
+  <span class="material-symbols-rounded">wifi_off</span>
+  <span>Modo Offline</span>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app"></div>
+
+<!-- ============ MODAL DE ASSINATURA ============ -->
+<div class="modal" id="signModal">
+  <div class="modal-content">
+    <h3><span class="material-symbols-rounded">draw</span> Assine no espaço abaixo:</h3>
+    <canvas id="signatureCanvas"></canvas>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="saveSign()">Salvar</button>
+      <button class="btn btn-outline" onclick="clearSign()">Limpar</button>
+      <button class="btn btn-outline-red" onclick="closeSign()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFIRM MODAL ============ -->
+<div class="modal" id="confirmModal">
+  <div class="modal-content modal-sm">
+    <h3 id="confirmTitle"></h3>
+    <p id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button class="btn btn-green" id="confirmYes">Confirmar</button>
+      <button class="btn btn-outline" id="confirmNo">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCRIPTS ============ -->
+<script src="libs/jspdf.umd.min.js"></script>
+<script src="js/vehicles.js"></script>
+<script src="js/api.js"></script>
+<script src="js/database.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/signature.js"></script>
+<script src="js/pdf-generator.js"></script>
+<script src="js/pages/login.js"></script>
+<script src="js/pages/dashboard.js"></script>
+<script src="js/pages/checklist-form.js"></script>
+<script src="js/pages/checklist-view.js"></script>
+<script src="js/pages/history.js"></script>
+<script src="js/app.js"></script>
+
+<!-- PWA Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log("Nova versão encontrada. Atualizando...");
+              window.location.reload();
+            }
+          });
+        });
+      })
+      .catch(err => console.log('SW error:', err));
+  }
+</script>
+
+</body>
+</html>

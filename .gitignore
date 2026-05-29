@@ -1,0 +1,7 @@
+node_modules/
+server/storage/pdfs/*
+!server/storage/pdfs/.gitkeep
+.env
+*.log
+.DS_Store
+Thumbs.db
