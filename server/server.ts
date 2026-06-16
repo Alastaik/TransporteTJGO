@@ -76,6 +76,10 @@ async function runStartupTasks() {
   try {
     // Roda um script de migração rápido para garantir que as colunas novas existam
     await pool.query(`
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS pin_hash VARCHAR(255);
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS papel VARCHAR(20) DEFAULT 'vistoriador';
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT TRUE;
+
       ALTER TABLE checklists ADD COLUMN IF NOT EXISTS veiculo_placa_descaract VARCHAR(50);
       ALTER TABLE checklists ADD COLUMN IF NOT EXISTS emp_placa_descaract VARCHAR(50);
       ALTER TABLE auditoria ADD COLUMN IF NOT EXISTS usuario_nome VARCHAR(255);
