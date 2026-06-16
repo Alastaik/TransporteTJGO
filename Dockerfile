@@ -40,7 +40,9 @@ COPY --from=builder /usr/src/app/server/db/schema.sql ./dist/server/db/schema.sq
 
 
 # Cria a pasta de storage e dá permissões
-RUN mkdir -p ./server/storage/pdfs && chown -R node:node ./server/storage/pdfs && mkdir -p ./server/storage/fotos && chown -R node:node ./server/storage/fotos
+RUN mkdir -p ./server/storage/pdfs && chown -R node:node ./server/storage/pdfs \
+    && mkdir -p ./server/storage/fotos && chown -R node:node ./server/storage/fotos \
+    && mkdir -p ./server/storage/backups && chown -R node:node ./server/storage/backups
 
 # Muda para usuário não-root (boa prática de segurança)
 USER node

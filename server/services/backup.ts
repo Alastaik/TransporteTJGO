@@ -5,7 +5,8 @@ import cron from 'node-cron';
 
 export function initBackupRoutine() {
   // Configuração
-  const backupsDir = path.join(__dirname, '..', '..', 'storage', 'backups');
+  // Como estamos rodando de dist/server/services, subimos 3 níveis para pegar a raiz do projeto e ir pra server/storage
+  const backupsDir = path.join(__dirname, '..', '..', '..', 'server', 'storage', 'backups');
   const dbUser = process.env.DB_USER || 'tjgo_app';
   const dbPassword = process.env.DB_PASSWORD || 'tjgo_senha_segura';
   const dbName = process.env.DB_NAME || 'transportetjgo_db';
