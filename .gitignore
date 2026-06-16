@@ -1,7 +1,14 @@
 node_modules/
+dist/
+.vite/
+
 server/storage/pdfs/*
 !server/storage/pdfs/.gitkeep
+server/storage/fotos/*
+!server/storage/fotos/.gitkeep
+
 .env
+.env.*
 *.log
 .DS_Store
 Thumbs.db

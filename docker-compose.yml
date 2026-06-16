@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      target: production
+    container_name: tjgo_app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=transportetjgo_db
+      - DB_USER=tjgo_app
+      - DB_PASSWORD=tjgo_senha_segura
+      - JWT_SECRET=${JWT_SECRET:-TROQUE_ESTE_SEGREDO_AQUI_COM_STRING_ALEATORIA_LONGA}
+      - JWT_EXPIRES_IN=30d
+      - STORAGE_PATH=./server/storage/pdfs
+    volumes:
+      - tjgo_pdfs:/usr/src/app/server/storage/pdfs
+      - tjgo_fotos:/usr/src/app/server/storage/fotos
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: tjgo_postgres
+    environment:
+      - POSTGRES_USER=tjgo_app
+      - POSTGRES_PASSWORD=tjgo_senha_segura
+      - POSTGRES_DB=transportetjgo_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - tjgo_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tjgo_app -d transportetjgo_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  tjgo_db_data:
+  tjgo_pdfs:
+  tjgo_fotos:
