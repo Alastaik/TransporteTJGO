@@ -68,8 +68,39 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({ error: 'Erro interno do servidor' });
 });
 
+// ============ MIGRATIONS & BACKUP ============
+import { pool } from './db';
+import { initBackupRoutine } from './services/backup';
+
+async function runStartupTasks() {
+  try {
+    // Roda um script de migração rápido para garantir que as colunas novas existam
+    await pool.query(`
+      ALTER TABLE checklists ADD COLUMN IF NOT EXISTS veiculo_placa_descaract VARCHAR(50);
+      ALTER TABLE checklists ADD COLUMN IF NOT EXISTS emp_placa_descaract VARCHAR(50);
+      ALTER TABLE auditoria ADD COLUMN IF NOT EXISTS usuario_nome VARCHAR(255);
+      
+      CREATE TABLE IF NOT EXISTS fotos_checklist (
+          id SERIAL PRIMARY KEY,
+          checklist_id INTEGER REFERENCES checklists(id) ON DELETE CASCADE,
+          caminho_arquivo VARCHAR(255) NOT NULL,
+          criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('[DB] Migrações verificadas/aplicadas com sucesso.');
+  } catch (err) {
+    console.error('[DB] Erro ao aplicar migrações:', err);
+  }
+
+  try {
+    initBackupRoutine();
+  } catch (err) {
+    console.error('[Backup] Erro ao iniciar rotina de backup:', err);
+  }
+}
+
 // ============ START ============
-app.listen(Number(PORT), '0.0.0.0', () => {
+app.listen(Number(PORT), '0.0.0.0', async () => {
   console.log(`
   ╔════════════════════════════════════════════════╗
   ║   Sistema de Transporte TJGO — Servidor        ║
@@ -77,6 +108,8 @@ app.listen(Number(PORT), '0.0.0.0', () => {
   ║   Ambiente: ${(process.env.NODE_ENV || 'development').padEnd(15)}              ║
   ╚════════════════════════════════════════════════╝
   `);
+  
+  await runStartupTasks();
 });
 
 export default app;
