@@ -22,6 +22,7 @@ services:
     volumes:
       - tjgo_pdfs:/usr/src/app/server/storage/pdfs
       - tjgo_fotos:/usr/src/app/server/storage/fotos
+      - tjgo_backups:/usr/src/app/server/storage/backups
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,3 +50,4 @@ volumes:
   tjgo_db_data:
   tjgo_pdfs:
   tjgo_fotos:
+  tjgo_backups:

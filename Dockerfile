@@ -24,6 +24,9 @@ WORKDIR /usr/src/app
 # Define ambiente como produção
 ENV NODE_ENV=production
 
+# Instala o client do PostgreSQL para rotina de backup (pg_dump)
+RUN apk update && apk add postgresql-client && rm -rf /var/cache/apk/*
+
 # Copia arquivos de dependência
 COPY package*.json ./
 

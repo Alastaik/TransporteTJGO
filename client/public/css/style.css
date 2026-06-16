@@ -367,10 +367,42 @@ input::placeholder, textarea::placeholder { color: #475569; }
   .grid { grid-template-columns: 1fr; gap: 0; }
   .stats-grid { grid-template-columns: 1fr; }
   .actions-grid { grid-template-columns: 1fr; }
-  .btn-grid { flex-direction: column; }
   .photos { grid-template-columns: repeat(2, 1fr); }
-  .table-container { border: none; }
-  .checklist-table td, .checklist-table th { padding: 8px 5px; font-size: 12px; }
+  .table-container { border: none; overflow-x: visible; }
+  
+  /* Converte a tabela em cards verticais */
+  .checklist-table { min-width: 100%; display: block; }
+  .checklist-table thead { display: none; /* Oculta o cabeçalho "ITEM" */ }
+  .checklist-table tbody { display: block; width: 100%; }
+  .checklist-table tr { 
+    display: flex; 
+    flex-direction: column; 
+    background: rgba(255,255,255,0.03); 
+    border: 1px solid var(--border-color); 
+    border-radius: var(--radius-sm); 
+    margin-bottom: 15px; 
+    padding: 12px; 
+  }
+  .checklist-table td { 
+    display: block; 
+    width: 100%; 
+    padding: 6px 0; 
+    border: none; 
+    font-size: 13px;
+  }
+  /* O primeiro TD é o Nome do Item (ex: Óleo) */
+  .checklist-table td:first-child { 
+    font-weight: bold; 
+    font-size: 15px; 
+    color: #fff; 
+    border-bottom: 1px solid rgba(255,255,255,0.1); 
+    margin-bottom: 8px; 
+    padding-bottom: 8px; 
+  }
+  
+  .btn-grid { flex-direction: row; display: flex; width: 100%; }
+  .check-btn { flex: 1; padding: 12px 0; font-size: 13px; }
+  
   .topbar-content { flex-direction: column; text-align: center; }
   .topbar-text { text-align: center; }
   .compare-grid { grid-template-columns: 1fr; }

@@ -15,8 +15,8 @@ sudo apt install -y git docker.io docker-compose
 
 Adicione o usuário atual ao grupo docker para executar sem `sudo`:
 ```bash
-sudo usermod -aG docker $USER
-newgrp docker
+    sudo usermod -aG docker $USER
+    newgrp docker
 ```
 
 ---

@@ -781,18 +781,24 @@ const ChecklistFormPage = {
       const input = div.querySelector('input');
       const img = div.querySelector('img');
 
-      input.addEventListener('change', function () {
+      input.addEventListener('change', async function () {
         if (this.files && this.files[0]) {
-          const reader = new FileReader();
-          reader.onload = async (e) => {
-            const compressed = await ChecklistFormPage.compressImage(e.target.result, 800, 0.7);
+          try {
+            const file = this.files[0];
+            // Usa createObjectURL em vez de FileReader para evitar estourar a memória RAM (OOM) com imagens de 24MB+
+            const objectUrl = URL.createObjectURL(file);
+            const compressed = await ChecklistFormPage.compressImage(objectUrl, 800, 0.7);
+            URL.revokeObjectURL(objectUrl); // Libera memória IMEDIATAMENTE
+            
             img.src = compressed;
             img.style.display = 'block';
-            // Append the phase prefix so we know which phase this photo belongs to
+            
             const catDb = (ChecklistFormPage.fase || 'entrada') + '_' + containerId;
             ChecklistFormPage.fotosCaptured[fotoId] = { categoria: catDb, label, dados: compressed };
-          };
-          reader.readAsDataURL(this.files[0]);
+          } catch (e) {
+            console.error('Erro ao comprimir imagem:', e);
+            App.toast('Erro ao processar imagem pesada. Tente outra.', 'error');
+          }
         }
       });
 
@@ -800,7 +806,7 @@ const ChecklistFormPage = {
     }
   },
 
-  compressImage(base64, maxWidth, quality) {
+  compressImage(imageUrl, maxWidth, quality) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = function () {
@@ -812,8 +818,8 @@ const ChecklistFormPage = {
         ctx.drawImage(img, 0, 0, w, h);
         resolve(canvas.toDataURL('image/jpeg', quality));
       };
-      img.onerror = () => resolve(base64);
-      img.src = base64;
+      img.onerror = () => resolve(imageUrl);
+      img.src = imageUrl;
     });
   },
 

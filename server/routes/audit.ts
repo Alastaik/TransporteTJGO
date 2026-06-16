@@ -58,10 +58,56 @@ router.get('/', authMiddleware, async (req: Request, res: Response): Promise<any
       limit,
       totalPages: Math.ceil(total / limit)
     });
-  } catch (err) {
-    console.error('Erro ao listar auditoria geral:', err);
-    res.status(500).json({ error: 'Erro interno' });
+  } catch (error) {
+    console.error('Erro ao buscar auditoria:', error);
+    res.status(500).json({ error: 'Erro ao buscar dados de auditoria' });
   }
+});
+
+// Endpoint para forçar e baixar um backup manual do banco de dados
+router.get('/backup/download', authMiddleware, (req, res) => {
+  const user = (req as any).user;
+  if (user.papel !== 'admin') {
+    return res.status(403).json({ error: 'Acesso negado' });
+  }
+
+  const dbUser = process.env.DB_USER || 'tjgo_app';
+  const dbPassword = process.env.DB_PASSWORD || 'tjgo_senha_segura';
+  const dbName = process.env.DB_NAME || 'transportetjgo_db';
+  const dbHost = process.env.DB_HOST || 'postgres';
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
+  const fileName = `backup-${dbName}-manual-${timestamp}.sql`;
+
+  // Define headers para download
+  res.setHeader('Content-disposition', `attachment; filename=${fileName}`);
+  res.setHeader('Content-type', 'application/octet-stream');
+
+  const { spawn } = require('child_process');
+  
+  // O Docker envia a senha pro pg_dump via variável de ambiente PGPASSWORD
+  const env = { ...process.env, PGPASSWORD: dbPassword };
+  const dumpProcess = spawn('pg_dump', ['-h', dbHost, '-U', dbUser, '-d', dbName, '-F', 'p'], { env });
+
+  // Faz o pipe do output diretamente para o response (streaming de download)
+  dumpProcess.stdout.pipe(res);
+
+  dumpProcess.stderr.on('data', (data: any) => {
+    console.error(`[pg_dump stderr]: ${data}`);
+  });
+
+  dumpProcess.on('error', (error: any) => {
+    console.error('[Backup Manual] Erro:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Erro ao gerar backup' });
+    }
+  });
+
+  dumpProcess.on('close', (code: number) => {
+    if (code !== 0 && !res.headersSent) {
+      res.status(500).json({ error: 'Processo pg_dump falhou' });
+    }
+  });
 });
 
 export default router;
