@@ -785,10 +785,8 @@ const ChecklistFormPage = {
         if (this.files && this.files[0]) {
           try {
             const file = this.files[0];
-            // Usa createObjectURL em vez de FileReader para evitar estourar a memória RAM (OOM) com imagens de 24MB+
-            const objectUrl = URL.createObjectURL(file);
-            const compressed = await ChecklistFormPage.compressImage(objectUrl, 800, 0.7);
-            URL.revokeObjectURL(objectUrl); // Libera memória IMEDIATAMENTE
+            // Usa createImageBitmap (dentro de compressImage) para não estourar a RAM no mobile com imagens de 24MB+
+            const compressed = await ChecklistFormPage.compressImage(file, 800, 0.7);
             
             img.src = compressed;
             img.style.display = 'block';
@@ -806,20 +804,70 @@ const ChecklistFormPage = {
     }
   },
 
-  compressImage(imageUrl, maxWidth, quality) {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = function () {
+  compressImage(file, maxWidth, quality) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        let imgWidth, imgHeight, source;
+
+        // Tenta usar createImageBitmap (muito mais eficiente em RAM no mobile)
+        if (window.createImageBitmap) {
+          try {
+            // Primeiro pegamos as dimensões reais para não distorcer a proporção
+            const bmp = await createImageBitmap(file);
+            imgWidth = bmp.width;
+            imgHeight = bmp.height;
+            bmp.close(); // Libera a memória do bitmap original
+
+            let w = imgWidth, h = imgHeight;
+            if (w > maxWidth) { h = Math.round(h * (maxWidth / w)); w = maxWidth; }
+
+            // Cria o bitmap já redimensionado (gasta infinitamente menos RAM)
+            source = await createImageBitmap(file, { resizeWidth: w, resizeHeight: h });
+            imgWidth = w;
+            imgHeight = h;
+          } catch (e) {
+            console.warn("createImageBitmap falhou, fallback para Image", e);
+            source = null;
+          }
+        }
+
+        // Fallback para o método clássico (Image obj) se createImageBitmap falhar ou não existir
+        if (!source) {
+          source = new Image();
+          const objectUrl = URL.createObjectURL(file);
+          await new Promise((res, rej) => {
+            source.onload = res;
+            source.onerror = rej;
+            source.src = objectUrl;
+          });
+          imgWidth = source.width;
+          imgHeight = source.height;
+          URL.revokeObjectURL(objectUrl);
+
+          if (imgWidth > maxWidth) {
+            imgHeight = Math.round(imgHeight * (maxWidth / imgWidth));
+            imgWidth = maxWidth;
+          }
+        }
+
         const canvas = document.createElement('canvas');
-        let w = img.width, h = img.height;
-        if (w > maxWidth) { h = h * (maxWidth / w); w = maxWidth; }
-        canvas.width = w; canvas.height = h;
+        canvas.width = imgWidth;
+        canvas.height = imgHeight;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, w, h);
+        ctx.drawImage(source, 0, 0, imgWidth, imgHeight);
+
+        // Se source for um ImageBitmap, liberamos da memória
+        if (source.close) {
+          source.close();
+        }
+
         resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.onerror = () => resolve(imageUrl);
-      img.src = imageUrl;
+      } catch (err) {
+        console.error("Erro na compressão:", err);
+        // Se der tudo errado, devolve a URL original (mas isso provavelmente estouraria a RAM de novo)
+        const objectUrl = URL.createObjectURL(file);
+        resolve(objectUrl);
+      }
     });
   },
 
