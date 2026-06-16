@@ -10,12 +10,12 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=${PORT:-3000}
       - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=transportetjgo_db
-      - DB_USER=tjgo_app
-      - DB_PASSWORD=tjgo_senha_segura
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_NAME=${DB_NAME:-transportetjgo_db}
+      - DB_USER=${DB_USER:-tjgo_app}
+      - DB_PASSWORD=${DB_PASSWORD:-tjgo_senha_segura}
       - JWT_SECRET=${JWT_SECRET:-TROQUE_ESTE_SEGREDO_AQUI_COM_STRING_ALEATORIA_LONGA}
       - JWT_EXPIRES_IN=30d
       - STORAGE_PATH=./server/storage/pdfs
@@ -31,15 +31,15 @@ services:
     image: postgres:15-alpine
     container_name: tjgo_postgres
     environment:
-      - POSTGRES_USER=tjgo_app
-      - POSTGRES_PASSWORD=tjgo_senha_segura
-      - POSTGRES_DB=transportetjgo_db
+      - POSTGRES_USER=${DB_USER:-tjgo_app}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-tjgo_senha_segura}
+      - POSTGRES_DB=${DB_NAME:-transportetjgo_db}
     ports:
       - "5432:5432"
     volumes:
       - tjgo_db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tjgo_app -d transportetjgo_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
