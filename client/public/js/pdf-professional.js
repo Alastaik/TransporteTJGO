@@ -428,17 +428,74 @@ window.generateProfessionalPDF = async function(data, modo) {
       }
 
       // ==========================================
-      // ASSINATURAS
+      // FOTOS (se houver no BD)
+      // ==========================================
+      const fotosDoVeiculo = (data.fotos || []).filter(f => {
+        const isEmp = f.categoria.endsWith('_emp');
+        return t === 'emprestimo' ? isEmp : !isEmp;
+      });
+
+      if (fotosDoVeiculo.length > 0) {
+        const renderFotos = (titulo, arr) => {
+          if (arr.length === 0) return;
+          doc.addPage();
+          y = 20;
+          
+          doc.setFillColor(...AZUL);
+          doc.rect(M, y, W, 8, 'F');
+          doc.setTextColor(...BRANCO);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.text(`  ANEXO FOTOGRÁFICO — ${titulo}`, M + 2, y + 5.5);
+          doc.setTextColor(...PRETO);
+          y += 15;
+
+          let col = 0;
+          let rowH = 65;
+          let imgW = 85;
+          
+          arr.forEach(foto => {
+            if (y > pageH - 70) { doc.addPage(); y = 20; col = 0; }
+            const x = col === 0 ? M : M + imgW + 10;
+            
+            doc.setFontSize(9);
+            doc.setFont('helvetica', 'bold');
+            doc.text(foto.label || 'Foto', x, y);
+            
+            if (foto.dados) {
+              try {
+                doc.addImage(foto.dados, 'JPEG', x, y + 3, imgW, 55);
+              } catch (e) {
+                console.warn('Erro ao desenhar foto', e);
+              }
+            }
+            
+            if (col === 1) { col = 0; y += rowH; } 
+            else { col = 1; }
+          });
+        };
+
+        const entradaGerais = fotosDoVeiculo.filter(f => f.categoria.includes('entrada_') && f.categoria.includes('Gerais'));
+        const entradaAvarias = fotosDoVeiculo.filter(f => f.categoria.includes('entrada_') && f.categoria.includes('Avarias'));
+        const saidaGerais = fotosDoVeiculo.filter(f => f.categoria.includes('saida_') && f.categoria.includes('Gerais'));
+        const saidaAvarias = fotosDoVeiculo.filter(f => f.categoria.includes('saida_') && f.categoria.includes('Avarias'));
+
+        renderFotos('VISTORIA DE ENTRADA — GERAL', entradaGerais);
+        renderFotos('VISTORIA DE ENTRADA — AVARIAS', entradaAvarias);
+        renderFotos('VISTORIA DE SAÍDA — GERAL', saidaGerais);
+        renderFotos('VISTORIA DE SAÍDA — AVARIAS', saidaAvarias);
+      }
+
+      // ==========================================
+      // ASSINATURAS (No final do documento)
       // ==========================================
       checkPage(45);
       y += 8;
 
-      // Coloca a assinatura do vistoriador se existir
       const assSaidaVist = data[`${p}saida_assinatura_vistoriador`];
       const assEntradaVist = data[`${p}entrada_assinatura_vistoriador`];
       const assinaturaVistoriador = (modo === 'entrada' && assEntradaVist) ? assEntradaVist : (assSaidaVist || assEntradaVist);
 
-      // Coloca a assinatura do condutor se existir
       const assSaidaCond = data[`${p}saida_assinatura`];
       const assEntradaCond = data[`${p}entrada_assinatura`];
       const assinaturaCondutor = (modo === 'entrada' && assEntradaCond) ? assEntradaCond : (assSaidaCond || assEntradaCond);
@@ -459,7 +516,6 @@ window.generateProfessionalPDF = async function(data, modo) {
         y += 15;
       }
 
-      // Linhas de assinatura
       doc.setDrawColor(100, 100, 100);
       doc.setLineWidth(0.3);
       doc.line(leftCenter - 35, y, leftCenter + 35, y);

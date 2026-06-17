@@ -193,7 +193,76 @@ async function gerarPDFCompleto(tipo, pageCtx) {
       const servicos = doc.splitTextToSize(`Serviços: ${getVal(`servicosRealizados${suffix}`)}`, maxWid);
       doc.text(servicos, marginLeft, yPos); yPos += (servicos.length * 6) + 10;
 
-      // Assinaturas
+      // ==========================================
+      // FOTOS (se houver)
+      // ==========================================
+      const renderPhotosToPDF = (titulo, prefix, formId, typeFilter) => {
+        let fotosArr = [];
+        const isEmprestimo = formId === 'emprestimo';
+        const expectedSuffix = isEmprestimo ? '_emp' : '';
+        const categorySearch = prefix === 'geral' ? 'Gerais' : 'Avarias';
+        
+        // 1. From recently captured photos (current session)
+        // If typeFilter is 'entrada', we only include recently captured photos if pageCtx.fase is 'entrada'.
+        if (!typeFilter || typeFilter === pageCtx.fase) {
+          for (const key in pageCtx.fotosCaptured) {
+            if (key.includes(`foto-${prefix}-${expectedSuffix}-`)) {
+              fotosArr.push(pageCtx.fotosCaptured[key]);
+            }
+          }
+        }
+        
+        // 2. From database existing photos
+        if (pageCtx.existingData && pageCtx.existingData.fotos) {
+            pageCtx.existingData.fotos.forEach(f => {
+                const endsWithEmp = f.categoria.endsWith('_emp');
+                const matchesFase = typeFilter ? f.categoria.includes(typeFilter + '_') : true;
+
+                if (f.categoria.includes(categorySearch) && (isEmprestimo ? endsWithEmp : !endsWithEmp) && matchesFase) {
+                    // Check if it was not already pushed in step 1
+                    if (!fotosArr.some(existing => existing.label === f.label)) {
+                        fotosArr.push(f);
+                    }
+                }
+            });
+        }
+
+        if (fotosArr.length > 0) {
+          doc.addPage();
+          yPos = 20;
+          doc.setFontSize(14);
+          doc.setFont("helvetica", "bold");
+          doc.text(`ANEXO FOTOGRÁFICO - ${titulo}`, 105, yPos, { align: 'center' });
+          yPos += 15;
+
+          let col = 0;
+          let rowH = 60;
+          let imgW = 80;
+          let marginX = 20;
+
+          fotosArr.forEach((foto) => {
+            if (yPos > 240) { doc.addPage(); yPos = 20; col = 0; }
+            const x = col === 0 ? marginX : marginX + imgW + 10;
+            doc.setFontSize(10);
+            doc.text(foto.label, x, yPos);
+            if (foto.dados) {
+              try { doc.addImage(foto.dados, 'JPEG', x, yPos + 2, imgW, 45); } 
+              catch (e) { console.warn('Erro ao inserir foto no PDF:', e); }
+            }
+            if (col === 1) { col = 0; yPos += rowH; } 
+            else { col = 1; }
+          });
+        }
+      };
+
+      renderPhotosToPDF('VISTORIA DE ENTRADA — GERAL', 'geral', t, 'entrada');
+      renderPhotosToPDF('VISTORIA DE ENTRADA — AVARIAS', 'avaria', t, 'entrada');
+      renderPhotosToPDF('VISTORIA DE SAÍDA — GERAL', 'geral', t, 'saida');
+      renderPhotosToPDF('VISTORIA DE SAÍDA — AVARIAS', 'avaria', t, 'saida');
+
+      // ==========================================
+      // ASSINATURAS (No final do documento)
+      // ==========================================
       if (yPos > 220) { doc.addPage(); yPos = 20; }
       doc.setFont("helvetica", "bold");
       doc.text("ASSINATURAS", 105, yPos, { align: 'center' }); yPos += 20;
@@ -228,54 +297,6 @@ async function gerarPDFCompleto(tipo, pageCtx) {
       } else if (pageCtx.existingData && pageCtx.existingData.entrada_assinatura) {
          doc.addImage(pageCtx.existingData.entrada_assinatura, 'PNG', 120, yPos - 35, 70, 20);
       }
-
-      // Fotos (se houver)
-      const renderPhotosToPDF = (prefix, formId) => {
-        let fotosArr = [];
-        for (const key in pageCtx.fotosCaptured) {
-          if (key.includes(prefix) && key.includes(formId)) {
-            fotosArr.push(pageCtx.fotosCaptured[key]);
-          }
-        }
-        
-        if (fotosArr.length === 0 && pageCtx.existingData && pageCtx.existingData.fotos) {
-            pageCtx.existingData.fotos.forEach(f => {
-                if (f.categoria.includes(prefix) && f.categoria.includes(formId === 'oficial' ? 'oficial' : 'emprestimo')) {
-                    fotosArr.push(f);
-                }
-            });
-        }
-
-        if (fotosArr.length > 0) {
-          doc.addPage();
-          yPos = 20;
-          doc.setFontSize(14);
-          doc.setFont("helvetica", "bold");
-          doc.text(`ANEXO FOTOGRÁFICO - ${prefix.toUpperCase()}`, 105, yPos, { align: 'center' });
-          yPos += 15;
-
-          let col = 0;
-          let rowH = 60;
-          let imgW = 80;
-          let marginX = 20;
-
-          fotosArr.forEach((foto) => {
-            if (yPos > 240) { doc.addPage(); yPos = 20; col = 0; }
-            const x = col === 0 ? marginX : marginX + imgW + 10;
-            doc.setFontSize(10);
-            doc.text(foto.label, x, yPos);
-            if (foto.dados) {
-              try { doc.addImage(foto.dados, 'JPEG', x, yPos + 2, imgW, 45); } 
-              catch (e) { console.warn('Erro ao inserir foto no PDF:', e); }
-            }
-            if (col === 1) { col = 0; yPos += rowH; } 
-            else { col = 1; }
-          });
-        }
-      };
-
-      renderPhotosToPDF('geral', t);
-      renderPhotosToPDF('avaria', t);
     });
 
     // Save and Upload
