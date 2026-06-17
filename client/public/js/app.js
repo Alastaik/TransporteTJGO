@@ -125,9 +125,53 @@ const App = {
       history.pushState({ page: pageName, params }, '', `#${pageName}`);
     }
 
+    // Update mobile UI (Bottom Nav & FAB)
+    this.updateMobileUI(pageName);
+
     // Call afterRender if exists (async data loading)
     if (typeof page.afterRender === 'function') {
       page.afterRender(params);
+    }
+  },
+
+  updateMobileUI(pageName) {
+    const bottomNav = document.getElementById('bottomNav');
+    const mainFab = document.getElementById('mainFab');
+    
+    // Hide on login, checklist form, and view
+    const hideOnPages = ['login', 'checklist', 'view'];
+    const shouldHide = hideOnPages.includes(pageName);
+    
+    if (bottomNav) {
+      bottomNav.style.display = shouldHide ? 'none' : '';
+      
+      // Update active state
+      bottomNav.querySelectorAll('.nav-item').forEach(btn => {
+        if (btn.dataset.tab === pageName) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+    
+    if (mainFab) {
+      mainFab.style.display = shouldHide ? 'none' : '';
+      this.closeFabMenu(); // Ensure menu is closed when navigating
+    }
+  },
+
+  toggleFabMenu() {
+    const fabContainer = document.getElementById('mainFab');
+    if (fabContainer) {
+      fabContainer.classList.toggle('open');
+    }
+  },
+
+  closeFabMenu() {
+    const fabContainer = document.getElementById('mainFab');
+    if (fabContainer) {
+      fabContainer.classList.remove('open');
     }
   },
 

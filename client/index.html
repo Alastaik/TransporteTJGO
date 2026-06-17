@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="description" content="Sistema de Gestão de Transporte — Tribunal de Justiça do Estado de Goiás">
   <meta name="theme-color" content="#0a1628">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -37,6 +37,38 @@
 
 <!-- ============ APP SHELL ============ -->
 <div id="app"></div>
+
+<!-- ============ FAB & BOTTOM NAV ============ -->
+<div class="fab-container" id="mainFab">
+  <button class="fab-main" onclick="App.toggleFabMenu()">
+    <span class="material-symbols-rounded">add</span>
+  </button>
+  <div class="fab-menu" id="fabMenu">
+    <button class="fab-item" onclick="App.navigate('checklist', {modo: 'simples'}); App.toggleFabMenu();">
+      <span class="material-symbols-rounded">directions_car</span>
+      <span class="fab-label">Vistoria Simples</span>
+    </button>
+    <button class="fab-item" onclick="App.navigate('checklist', {modo: 'troca'}); App.toggleFabMenu();">
+      <span class="material-symbols-rounded">swap_horiz</span>
+      <span class="fab-label">Troca / Empréstimo</span>
+    </button>
+  </div>
+</div>
+
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-item" onclick="App.navigate('dashboard')" data-tab="dashboard">
+    <span class="material-symbols-rounded">home</span>
+    <span class="nav-label">Início</span>
+  </button>
+  <button class="nav-item" onclick="App.navigate('history')" data-tab="history">
+    <span class="material-symbols-rounded">history</span>
+    <span class="nav-label">Histórico</span>
+  </button>
+  <button class="nav-item" onclick="App.openPinModal()" data-tab="profile">
+    <span class="material-symbols-rounded">person</span>
+    <span class="nav-label">Perfil</span>
+  </button>
+</nav>
 
 <!-- ============ MODAL DE ASSINATURA ============ -->
 <div class="modal" id="signModal">

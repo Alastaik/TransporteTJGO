@@ -61,7 +61,7 @@ const DashboardPage = {
           </div>
 
           <!-- Quick Actions -->
-          <h2 class="section-title"><span class="material-symbols-rounded">bolt</span> Ações Rápidas</h2>
+          <h2 class="section-title hide-on-mobile"><span class="material-symbols-rounded">bolt</span> Ações Rápidas</h2>
           <div class="actions-grid">
             <button class="action-card action-blue" onclick="App.navigate('checklist', {modo: 'simples'})">
               <span class="material-symbols-rounded action-icon">directions_car</span>
