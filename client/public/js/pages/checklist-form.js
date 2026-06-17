@@ -949,8 +949,8 @@ const ChecklistFormPage = {
   // Strategy: never load the full-resolution image into memory
   compressImageSafe(file) {
     return new Promise(async (resolve, reject) => {
-      const MAX_DIMENSION = 640; // Aggressive cap for mobile safety
-      const QUALITY = 0.6;      // Lower quality = less memory + faster
+      const MAX_DIMENSION = 1280; // Balanced cap for good quality
+      const QUALITY = 0.85;      // Higher quality while still compressing
 
       try {
         // METHOD 1: createImageBitmap with resize (best — native, no full-res decode)
