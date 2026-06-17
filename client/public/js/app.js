@@ -115,6 +115,13 @@ const App = {
       params = {};
     }
 
+    // Clear saved checklist state when navigating AWAY from checklist
+    // (only the auto-restore on init should use it, not regular navigation)
+    if (pageName !== 'checklist') {
+      sessionStorage.removeItem('tjgo_form_state');
+      sessionStorage.removeItem('tjgo_pending_photo');
+    }
+
     this.renderPage(pageName, params, pushState);
   },
 

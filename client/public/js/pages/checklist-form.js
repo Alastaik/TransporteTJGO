@@ -531,6 +531,9 @@ const ChecklistFormPage = {
     }
     this.isDirty = false;
     window.onbeforeunload = null;
+    // Clear saved state — user left intentionally
+    sessionStorage.removeItem('tjgo_form_state');
+    sessionStorage.removeItem('tjgo_pending_photo');
     App.navigate('dashboard');
   },
 
@@ -787,13 +790,7 @@ const ChecklistFormPage = {
       </td>
       <td>
         <select id="select-item-outro${suffix}">
-          ${this.DEFEITOS_OPTIONS.map(d => `<option value="${d === 'Normal' ? '' : d}">${d}</option>`).join('')}
-        </select>
-      </td>`;
-    tbody.appendChild(trOutro);
-  },
-
-  // Build photo grid
+          ${this.DEFEITOS_OPTIONS.map(d => `<option value="${d === 'Normal' ? '' : d}">${d}<  // Build photo grid
   buildPhotoGrid(containerId, labelsOrCount, formId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -826,23 +823,33 @@ const ChecklistFormPage = {
         </div>
         <img alt="${label}">`;
 
-      // Attach change listeners to both inputs
+      // Attach listeners to both inputs
       div.querySelectorAll('input[type="file"]').forEach(input => {
+        // CLICK: fires BEFORE the camera/gallery opens — save state synchronously
+        input.addEventListener('click', function() {
+          ChecklistFormPage.saveFormStateToSession();
+        });
+
+        // CHANGE: fires AFTER the user took the photo or picked from gallery
         input.addEventListener('change', async function() {
           if (!this.files || !this.files[0]) return;
 
-          // Save form state right away in case OS kills browser during processing
-          ChecklistFormPage.saveFormStateToSession();
+          const targetFotoId = this.getAttribute('data-foto-id');
+          const targetContainerId = this.getAttribute('data-container-id');
+          const targetLabel = this.getAttribute('data-label');
+
+          // Show loading indicator
+          const photoBox = document.querySelector(`[data-foto-id="${targetFotoId}"]`);
+          if (photoBox) {
+            const actions = photoBox.querySelector('.photo-actions');
+            if (actions) actions.innerHTML = '<div class="loading-inline"><div class="loading-spinner"></div> Processando...</div>';
+          }
 
           try {
             const file = this.files[0];
-            const compressed = await ChecklistFormPage.compressImage(file, 800, 0.7);
-            const targetFotoId = this.getAttribute('data-foto-id');
-            const targetContainerId = this.getAttribute('data-container-id');
-            const targetLabel = this.getAttribute('data-label');
+            const compressed = await ChecklistFormPage.compressImageSafe(file);
 
             // Update the photo box
-            const photoBox = document.querySelector(`[data-foto-id="${targetFotoId}"]`);
             if (photoBox) {
               const img = photoBox.querySelector('img');
               if (img) {
@@ -859,6 +866,22 @@ const ChecklistFormPage = {
           } catch (e) {
             console.error('Erro ao comprimir imagem:', e);
             App.toast('Erro ao processar imagem. Tente outra.', 'error');
+            // Restore the buttons
+            if (photoBox) {
+              const actions = photoBox.querySelector('.photo-actions');
+              if (actions) {
+                actions.style.display = '';
+                actions.innerHTML = `
+                  <label class="btn btn-sm btn-outline photo-action-btn">
+                    <span class="material-symbols-rounded" style="font-size:16px!important;">photo_camera</span> Câmera
+                    <input type="file" accept="image/*" capture="environment" style="display:none;" data-foto-id="${targetFotoId}" data-container-id="${targetContainerId}" data-label="${targetLabel}">
+                  </label>
+                  <label class="btn btn-sm btn-outline photo-action-btn">
+                    <span class="material-symbols-rounded" style="font-size:16px!important;">photo_library</span> Galeria
+                    <input type="file" accept="image/*" style="display:none;" data-foto-id="${targetFotoId}" data-container-id="${targetContainerId}" data-label="${targetLabel}">
+                  </label>`;
+              }
+            }
           }
         });
       });
@@ -867,216 +890,113 @@ const ChecklistFormPage = {
     }
   },
 
-  // --- Form State Persistence (survives OS-level browser kills) ---
-  saveFormStateToSession() {
-    try {
-      const state = {
-        page: 'checklist',
-        modo: this.modo,
-        fase: this.fase,
-        checklistId: this.checklistId,
-        isEdit: this.isEdit,
-        isRetomar: this.isRetomar,
-        timestamp: Date.now(),
-        fotos: this.fotosCaptured,
-        fields: {}
-      };
-
-      // Capture all input/select/textarea values
-      const container = document.querySelector('.main-content');
-      if (container) {
-        container.querySelectorAll('input, select, textarea').forEach(el => {
-          if (el.id && el.type !== 'file') {
-            if (el.type === 'checkbox') {
-              state.fields[el.id] = el.checked;
-            } else {
-              state.fields[el.id] = el.value;
-            }
-          }
-        });
-      }
-
-      // Capture checklist button states
-      state.checkBtns = {};
-      document.querySelectorAll('.btn-grid .check-btn').forEach(btn => {
-        const grid = btn.closest('.btn-grid');
-        if (grid) {
-          const key = grid.getAttribute('data-item-idx');
-          if (!state.checkBtns[key]) state.checkBtns[key] = {};
-          const tipo = btn.getAttribute('data-tipo');
-          if (btn.classList.contains('active-sim')) state.checkBtns[key][tipo] = 'active-sim';
-          else if (btn.classList.contains('active-nao')) state.checkBtns[key][tipo] = 'active-nao';
-          else if (btn.classList.contains('active-dan')) state.checkBtns[key][tipo] = 'active-dan';
-        }
-      });
-
-      // Capture fuel selection
-      state.fuelSelected = {};
-      document.querySelectorAll('.fuel-level.selected').forEach(el => {
-        state.fuelSelected[el.getAttribute('data-suffix') || ''] = el.getAttribute('data-fuel');
-      });
-
-      // Capture signatures
-      ['signaturePreview', 'signaturePreview_vistoriador'].forEach(id => {
-        const img = document.getElementById(id);
-        if (img && img.src && img.src.startsWith('data:')) {
-          state.fields['__sig_' + id] = img.src;
-        }
-      });
-
-      sessionStorage.setItem('tjgo_form_state', JSON.stringify(state));
-    } catch(e) {
-      console.warn('Erro ao salvar estado do form:', e);
-    }
-  },
-
-  restoreFormStateFromSession() {
-    try {
-      const raw = sessionStorage.getItem('tjgo_form_state');
-      if (!raw) return false;
-      const state = JSON.parse(raw);
-
-      // Only restore if saved less than 30 minutes ago
-      if (Date.now() - state.timestamp > 30 * 60 * 1000) {
-        sessionStorage.removeItem('tjgo_form_state');
-        sessionStorage.removeItem('tjgo_pending_photo');
-        return false;
-      }
-
-      return state;
-    } catch(e) {
-      return false;
-    }
-  },
-
-  applyRestoredState(state) {
-    if (!state || !state.fields) return;
-
-    // Restore input/select/textarea values
-    Object.entries(state.fields).forEach(([id, value]) => {
-      if (id.startsWith('__sig_')) return; // Handle sigs separately
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (el.type === 'checkbox') {
-        el.checked = value;
-      } else {
-        el.value = value;
-      }
-    });
-
-    // Restore checklist buttons
-    if (state.checkBtns) {
-      Object.entries(state.checkBtns).forEach(([key, tipos]) => {
-        Object.entries(tipos).forEach(([tipo, className]) => {
-          const grid = document.querySelector(`[data-item-idx="${key}"]`);
-          if (grid) {
-            const btn = grid.querySelector(`[data-tipo="${tipo}"]`);
-            if (btn && className) btn.classList.add(className);
-          }
-        });
-      });
-    }
-
-    // Restore fuel
-    if (state.fuelSelected) {
-      Object.entries(state.fuelSelected).forEach(([suffix, fuel]) => {
-        const el = document.querySelector(`.fuel-level[data-fuel="${fuel}"][data-suffix="${suffix}"]`);
-        if (el) el.classList.add('selected');
-        const hidden = document.getElementById('valorCombustivel' + suffix);
-        if (hidden) hidden.value = fuel;
-      });
-    }
-
-    // Restore signatures
-    ['signaturePreview', 'signaturePreview_vistoriador'].forEach(id => {
-      const sigData = state.fields['__sig_' + id];
-      if (sigData) {
-        const img = document.getElementById(id);
-        if (img) img.src = sigData;
-      }
-    });
-
-    // Restore captured photos
-    if (state.fotos) {
-      this.fotosCaptured = state.fotos;
-      Object.entries(state.fotos).forEach(([fotoId, fotoData]) => {
-        const box = document.querySelector(`[data-foto-id="${fotoId}"]`);
-        if (box && fotoData.dados) {
-          const img = box.querySelector('img');
-          if (img) { img.src = fotoData.dados; img.style.display = 'block'; }
-          const addBtn = box.querySelector('button');
-          if (addBtn) addBtn.style.display = 'none';
-        }
-      });
-    }
-
-    // Clear saved state
-    sessionStorage.removeItem('tjgo_form_state');
-    sessionStorage.removeItem('tjgo_pending_photo');
-    App.toast('Formulário restaurado automaticamente!', 'success');
-  },
-
-  compressImage(file, maxWidth, quality) {
+  // Ultra memory-safe image compression for mobile devices
+  // Strategy: never load the full-resolution image into memory
+  compressImageSafe(file) {
     return new Promise(async (resolve, reject) => {
-      try {
-        let imgWidth, imgHeight, source;
+      const MAX_DIMENSION = 640; // Aggressive cap for mobile safety
+      const QUALITY = 0.6;      // Lower quality = less memory + faster
 
-        // Tenta usar createImageBitmap (muito mais eficiente em RAM no mobile)
+      try {
+        // METHOD 1: createImageBitmap with resize (best — native, no full-res decode)
         if (window.createImageBitmap) {
           try {
-            // Primeiro pegamos as dimensões reais para não distorcer a proporção
-            const bmp = await createImageBitmap(file);
-            imgWidth = bmp.width;
-            imgHeight = bmp.height;
-            bmp.close(); // Libera a memória do bitmap original
+            // Get dimensions without fully decoding the image
+            const bmpOriginal = await createImageBitmap(file);
+            const ow = bmpOriginal.width;
+            const oh = bmpOriginal.height;
+            bmpOriginal.close(); // Free immediately
 
-            let w = imgWidth, h = imgHeight;
-            if (w > maxWidth) { h = Math.round(h * (maxWidth / w)); w = maxWidth; }
+            // Calculate target size
+            let tw = ow, th = oh;
+            if (tw > MAX_DIMENSION || th > MAX_DIMENSION) {
+              if (tw > th) {
+                th = Math.round(th * (MAX_DIMENSION / tw));
+                tw = MAX_DIMENSION;
+              } else {
+                tw = Math.round(tw * (MAX_DIMENSION / th));
+                th = MAX_DIMENSION;
+              }
+            }
 
-            // Cria o bitmap já redimensionado (gasta infinitamente menos RAM)
-            source = await createImageBitmap(file, { resizeWidth: w, resizeHeight: h });
-            imgWidth = w;
-            imgHeight = h;
+            // Decode directly at target resolution (uses minimal RAM)
+            const bmpResized = await createImageBitmap(file, {
+              resizeWidth: tw,
+              resizeHeight: th,
+              resizeQuality: 'medium'
+            });
+
+            // Draw to canvas and export
+            const canvas = document.createElement('canvas');
+            canvas.width = tw;
+            canvas.height = th;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(bmpResized, 0, 0);
+            bmpResized.close(); // Free bitmap RAM
+
+            const dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
+
+            // Nuke canvas to free memory
+            canvas.width = 1;
+            canvas.height = 1;
+
+            resolve(dataUrl);
+            return;
           } catch (e) {
-            console.warn("createImageBitmap falhou, fallback para Image", e);
-            source = null;
+            console.warn('createImageBitmap resize failed, trying fallback:', e);
           }
         }
 
-        // Fallback para o método clássico (Image obj) se createImageBitmap falhar ou não existir
-        if (!source) {
-          source = new Image();
-          const objectUrl = URL.createObjectURL(file);
-          await new Promise((res, rej) => {
-            source.onload = res;
-            source.onerror = rej;
-            source.src = objectUrl;
-          });
-          imgWidth = source.width;
-          imgHeight = source.height;
+        // METHOD 2: Classic Image + Canvas fallback (for older browsers)
+        const objectUrl = URL.createObjectURL(file);
+        const img = new Image();
+
+        img.onload = function() {
+          URL.revokeObjectURL(objectUrl); // Free blob URL
+
+          let tw = img.width, th = img.height;
+          if (tw > MAX_DIMENSION || th > MAX_DIMENSION) {
+            if (tw > th) {
+              th = Math.round(th * (MAX_DIMENSION / tw));
+              tw = MAX_DIMENSION;
+            } else {
+              tw = Math.round(tw * (MAX_DIMENSION / th));
+              th = MAX_DIMENSION;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = tw;
+          canvas.height = th;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, tw, th);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', QUALITY);
+
+          // Nuke canvas
+          canvas.width = 1;
+          canvas.height = 1;
+
+          resolve(dataUrl);
+        };
+
+        img.onerror = function() {
           URL.revokeObjectURL(objectUrl);
+          reject(new Error('Falha ao carregar imagem'));
+        };
 
-          if (imgWidth > maxWidth) {
-            imgHeight = Math.round(imgHeight * (maxWidth / imgWidth));
-            imgWidth = maxWidth;
-          }
-        }
+        img.src = objectUrl;
 
-        const canvas = document.createElement('canvas');
-        canvas.width = imgWidth;
-        canvas.height = imgHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(source, 0, 0, imgWidth, imgHeight);
-
-        // Se source for um ImageBitmap, liberamos da memória
-        if (source.close) {
-          source.close();
-        }
-
-        resolve(canvas.toDataURL('image/jpeg', quality));
       } catch (err) {
-        console.error("Erro na compressão:", err);
-        // Se der tudo errado, devolve a URL original (mas isso provavelmente estouraria a RAM de novo)
+        reject(err);
+      }
+    });
+  },
+
+  // Keep old method name as alias for any other code that calls it
+  compressImage(file, maxWidth, quality) {
+    return this.compressImageSafe(file);
+  },vo)
         const objectUrl = URL.createObjectURL(file);
         resolve(objectUrl);
       }
