@@ -276,6 +276,9 @@ input::placeholder, textarea::placeholder { color: #475569; }
 .photo-box b { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 10px; }
 .photo-box img { max-width: 100%; max-height: 90px; border-radius: 4px; display: none; object-fit: cover; margin-top: auto; border: 1px solid var(--border-color); }
 
+.photo-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.photo-action-btn { cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-size: 11px !important; padding: 6px 10px !important; min-height: auto !important; }
+
 /* === SIGNATURE === */
 .signature-container { background: #fff; border: 2px dashed #94a3b8; border-radius: var(--radius-md); height: 180px; position: relative; overflow: hidden; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .signature-placeholder { color: #64748b; font-size: 16px; font-weight: 500; display: flex; flex-direction: column; align-items: center; gap: 10px; }

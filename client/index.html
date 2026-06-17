@@ -70,31 +70,7 @@
   </button>
 </nav>
 
-<!-- ============ PHOTO PICKER BOTTOM SHEET ============ -->
-<div class="modal" id="photoPickerModal">
-  <div class="modal-content modal-sm" style="margin-top:auto; border-radius: var(--radius-lg) var(--radius-lg) 0 0; max-width: 100%; width: 100%;">
-    <div style="width:40px;height:4px;background:var(--border-color);border-radius:2px;margin:0 auto 15px;"></div>
-    <h3><span class="material-symbols-rounded">add_a_photo</span> Adicionar Foto</h3>
-    <p style="font-size:13px; margin-bottom:15px;">Como deseja adicionar a imagem?</p>
-    <div class="modal-actions" style="flex-direction: column; gap: 12px;">
-      <button class="btn btn-primary btn-lg" onclick="ChecklistFormPage.pickPhoto('camera')" style="width:100%;">
-        <span class="material-symbols-rounded">photo_camera</span>
-        Tirar Foto (Câmera)
-      </button>
-      <button class="btn btn-green btn-lg" onclick="ChecklistFormPage.pickPhoto('gallery')" style="width:100%;">
-        <span class="material-symbols-rounded">photo_library</span>
-        Escolher da Galeria
-      </button>
-      <button class="btn btn-outline" onclick="ChecklistFormPage.closePhotoPicker()" style="width:100%; margin-top:5px;">
-        Cancelar
-      </button>
-    </div>
-  </div>
-</div>
 
-<!-- Hidden file inputs for photo capture -->
-<input type="file" id="photoInputCamera" accept="image/*" capture="environment" style="display:none;">
-<input type="file" id="photoInputGallery" accept="image/*" style="display:none;">
 
 <!-- ============ MODAL DE ASSINATURA ============ -->
 <div class="modal" id="signModal">

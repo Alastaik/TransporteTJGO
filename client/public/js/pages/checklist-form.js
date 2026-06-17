@@ -811,83 +811,60 @@ const ChecklistFormPage = {
       div.setAttribute('data-foto-id', fotoId);
       div.setAttribute('data-container-id', containerId);
       div.setAttribute('data-label', label);
-      div.innerHTML = `<b>${label}</b>
-        <button type="button" class="btn btn-sm btn-outline" style="margin-top:8px;font-size:12px;" onclick="ChecklistFormPage.openPhotoPicker('${fotoId}', '${containerId}', '${label.replace(/'/g, "\\'")}')">
-          <span class="material-symbols-rounded" style="font-size:18px!important;">add_a_photo</span> Adicionar
-        </button>
+
+      div.innerHTML = `
+        <b>${label}</b>
+        <div class="photo-actions">
+          <label class="btn btn-sm btn-outline photo-action-btn">
+            <span class="material-symbols-rounded" style="font-size:16px!important;">photo_camera</span> Câmera
+            <input type="file" accept="image/*" capture="environment" style="display:none;" data-foto-id="${fotoId}" data-container-id="${containerId}" data-label="${label}">
+          </label>
+          <label class="btn btn-sm btn-outline photo-action-btn">
+            <span class="material-symbols-rounded" style="font-size:16px!important;">photo_library</span> Galeria
+            <input type="file" accept="image/*" style="display:none;" data-foto-id="${fotoId}" data-container-id="${containerId}" data-label="${label}">
+          </label>
+        </div>
         <img alt="${label}">`;
+
+      // Attach change listeners to both inputs
+      div.querySelectorAll('input[type="file"]').forEach(input => {
+        input.addEventListener('change', async function() {
+          if (!this.files || !this.files[0]) return;
+
+          // Save form state right away in case OS kills browser during processing
+          ChecklistFormPage.saveFormStateToSession();
+
+          try {
+            const file = this.files[0];
+            const compressed = await ChecklistFormPage.compressImage(file, 800, 0.7);
+            const targetFotoId = this.getAttribute('data-foto-id');
+            const targetContainerId = this.getAttribute('data-container-id');
+            const targetLabel = this.getAttribute('data-label');
+
+            // Update the photo box
+            const photoBox = document.querySelector(`[data-foto-id="${targetFotoId}"]`);
+            if (photoBox) {
+              const img = photoBox.querySelector('img');
+              if (img) {
+                img.src = compressed;
+                img.style.display = 'block';
+              }
+              // Hide the action buttons
+              const actions = photoBox.querySelector('.photo-actions');
+              if (actions) actions.style.display = 'none';
+            }
+
+            const catDb = (ChecklistFormPage.fase || 'entrada') + '_' + targetContainerId;
+            ChecklistFormPage.fotosCaptured[targetFotoId] = { categoria: catDb, label: targetLabel, dados: compressed };
+          } catch (e) {
+            console.error('Erro ao comprimir imagem:', e);
+            App.toast('Erro ao processar imagem. Tente outra.', 'error');
+          }
+        });
+      });
 
       container.appendChild(div);
     }
-  },
-
-  // --- Photo Picker Logic ---
-  _pendingPhotoTarget: null,
-
-  openPhotoPicker(fotoId, containerId, label) {
-    this._pendingPhotoTarget = { fotoId, containerId, label };
-    // Save form state BEFORE opening camera (OS might kill the browser)
-    this.saveFormStateToSession();
-    const modal = document.getElementById('photoPickerModal');
-    if (modal) modal.classList.add('active');
-  },
-
-  closePhotoPicker() {
-    const modal = document.getElementById('photoPickerModal');
-    if (modal) modal.classList.remove('active');
-    this._pendingPhotoTarget = null;
-  },
-
-  pickPhoto(mode) {
-    this.closePhotoPicker();
-    if (!this._pendingPhotoTarget) return;
-
-    // Save pending target to sessionStorage so we can recover after OS kill
-    sessionStorage.setItem('tjgo_pending_photo', JSON.stringify(this._pendingPhotoTarget));
-    // Save complete form state
-    this.saveFormStateToSession();
-
-    const inputId = mode === 'camera' ? 'photoInputCamera' : 'photoInputGallery';
-    const input = document.getElementById(inputId);
-    if (!input) return;
-
-    // Remove old listeners to avoid duplicates
-    const freshInput = input.cloneNode(true);
-    input.parentNode.replaceChild(freshInput, input);
-
-    freshInput.addEventListener('change', async function() {
-      if (this.files && this.files[0]) {
-        try {
-          const file = this.files[0];
-          const compressed = await ChecklistFormPage.compressImage(file, 800, 0.7);
-          const target = ChecklistFormPage._pendingPhotoTarget;
-          if (!target) return;
-
-          // Find the photo box and update it
-          const photoBox = document.querySelector(`[data-foto-id="${target.fotoId}"]`);
-          if (photoBox) {
-            const img = photoBox.querySelector('img');
-            if (img) {
-              img.src = compressed;
-              img.style.display = 'block';
-            }
-            // Hide the "Adicionar" button
-            const addBtn = photoBox.querySelector('button');
-            if (addBtn) addBtn.style.display = 'none';
-          }
-
-          const catDb = (ChecklistFormPage.fase || 'entrada') + '_' + target.containerId;
-          ChecklistFormPage.fotosCaptured[target.fotoId] = { categoria: catDb, label: target.label, dados: compressed };
-          ChecklistFormPage._pendingPhotoTarget = null;
-          sessionStorage.removeItem('tjgo_pending_photo');
-        } catch (e) {
-          console.error('Erro ao comprimir imagem:', e);
-          App.toast('Erro ao processar imagem. Tente outra.', 'error');
-        }
-      }
-    });
-
-    freshInput.click();
   },
 
   // --- Form State Persistence (survives OS-level browser kills) ---
