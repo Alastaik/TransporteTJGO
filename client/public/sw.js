@@ -24,7 +24,7 @@ const ASSETS = [
   'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0'
 ];
 
-const CACHE_NAME = 'tjgo-transporte-v14-network-first';
+const CACHE_NAME = 'tjgo-transporte-v15-network-first';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -58,10 +58,24 @@ self.addEventListener('fetch', (e) => {
   // Estratégia: NETWORK FIRST (Tenta a rede primeiro, se falhar/offline usa o cache)
   // Isso resolve 100% o problema de ficar com versão antiga presa no cache
   
-  // Bypass HTTP cache on GET requests
-  const fetchRequest = (e.request.method === 'GET') 
-    ? new Request(e.request.url, { cache: 'no-cache', mode: e.request.mode === 'navigate' ? 'navigate' : 'cors', credentials: e.request.credentials }) 
-    : e.request;
+  // Bypass HTTP cache on GET requests SOMENTE para o nosso próprio domínio (evita quebrar fontes externas no iOS)
+  const isSameOrigin = e.request.url.startsWith(self.location.origin);
+  
+  let fetchRequest = e.request;
+  if (e.request.method === 'GET' && isSameOrigin) {
+    try {
+      fetchRequest = new Request(e.request.url, { 
+        cache: 'no-cache', 
+        headers: e.request.headers,
+        mode: e.request.mode === 'navigate' ? 'navigate' : 'same-origin',
+        credentials: e.request.credentials,
+        redirect: e.request.redirect
+      });
+    } catch (err) {
+      // Fallback seguro caso o navegador (ex: Safari antigo) falhe ao recriar o Request
+      fetchRequest = e.request;
+    }
+  }
 
   e.respondWith(
     fetch(fetchRequest)
