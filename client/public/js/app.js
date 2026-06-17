@@ -27,7 +27,21 @@ const App = {
     // Check auth and navigate
     if (Auth.isLoggedIn()) {
       await Auth.verifySession();
-      this.navigate('dashboard');
+      
+      // Check if there's a saved form state (browser was killed during camera use)
+      const savedState = ChecklistFormPage.restoreFormStateFromSession();
+      if (savedState && savedState.page === 'checklist') {
+        // Navigate back to the checklist form with the same params
+        this.navigate('checklist', {
+          modo: savedState.modo,
+          id: savedState.checklistId || undefined,
+          retomar: savedState.isRetomar || false,
+          edit: savedState.isEdit || false,
+          _restoreState: savedState
+        });
+      } else {
+        this.navigate('dashboard');
+      }
     } else {
       this.navigate('login');
     }

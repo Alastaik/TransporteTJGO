@@ -406,7 +406,7 @@ const ChecklistFormPage = {
     </div>`;
   },
 
-  async afterRender() {
+  async afterRender(params = {}) {
     // Build dynamic content
     this.buildChecklistTable('');
     this.buildPhotoGrid('geral-oficial', this.FOTOS_GERAIS, 'oficial');
@@ -464,6 +464,13 @@ const ChecklistFormPage = {
     // If resuming an existing checklist, load its data
     if (this.checklistId) {
       await this.loadExistingChecklist(this.checklistId);
+    }
+
+    // Restore form state if coming back from a camera/OS kill
+    if (params._restoreState) {
+      setTimeout(() => {
+        this.applyRestoredState(params._restoreState);
+      }, 300);
     }
 
     // Dirty tracking — marca formulário como alterado quando o usuário interagir
@@ -801,32 +808,235 @@ const ChecklistFormPage = {
 
       const div = document.createElement('div');
       div.className = 'photo-box';
-      div.innerHTML = `<b>${label}</b><input type="file" accept="image/*" style="margin-top:5px;font-size:11px;"><img alt="${label}">`;
-
-      const input = div.querySelector('input');
-      const img = div.querySelector('img');
-
-      input.addEventListener('change', async function () {
-        if (this.files && this.files[0]) {
-          try {
-            const file = this.files[0];
-            // Usa createImageBitmap (dentro de compressImage) para não estourar a RAM no mobile com imagens de 24MB+
-            const compressed = await ChecklistFormPage.compressImage(file, 800, 0.7);
-            
-            img.src = compressed;
-            img.style.display = 'block';
-            
-            const catDb = (ChecklistFormPage.fase || 'entrada') + '_' + containerId;
-            ChecklistFormPage.fotosCaptured[fotoId] = { categoria: catDb, label, dados: compressed };
-          } catch (e) {
-            console.error('Erro ao comprimir imagem:', e);
-            App.toast('Erro ao processar imagem pesada. Tente outra.', 'error');
-          }
-        }
-      });
+      div.setAttribute('data-foto-id', fotoId);
+      div.setAttribute('data-container-id', containerId);
+      div.setAttribute('data-label', label);
+      div.innerHTML = `<b>${label}</b>
+        <button type="button" class="btn btn-sm btn-outline" style="margin-top:8px;font-size:12px;" onclick="ChecklistFormPage.openPhotoPicker('${fotoId}', '${containerId}', '${label.replace(/'/g, "\\'")}')">
+          <span class="material-symbols-rounded" style="font-size:18px!important;">add_a_photo</span> Adicionar
+        </button>
+        <img alt="${label}">`;
 
       container.appendChild(div);
     }
+  },
+
+  // --- Photo Picker Logic ---
+  _pendingPhotoTarget: null,
+
+  openPhotoPicker(fotoId, containerId, label) {
+    this._pendingPhotoTarget = { fotoId, containerId, label };
+    // Save form state BEFORE opening camera (OS might kill the browser)
+    this.saveFormStateToSession();
+    const modal = document.getElementById('photoPickerModal');
+    if (modal) modal.classList.add('active');
+  },
+
+  closePhotoPicker() {
+    const modal = document.getElementById('photoPickerModal');
+    if (modal) modal.classList.remove('active');
+    this._pendingPhotoTarget = null;
+  },
+
+  pickPhoto(mode) {
+    this.closePhotoPicker();
+    if (!this._pendingPhotoTarget) return;
+
+    // Save pending target to sessionStorage so we can recover after OS kill
+    sessionStorage.setItem('tjgo_pending_photo', JSON.stringify(this._pendingPhotoTarget));
+    // Save complete form state
+    this.saveFormStateToSession();
+
+    const inputId = mode === 'camera' ? 'photoInputCamera' : 'photoInputGallery';
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    // Remove old listeners to avoid duplicates
+    const freshInput = input.cloneNode(true);
+    input.parentNode.replaceChild(freshInput, input);
+
+    freshInput.addEventListener('change', async function() {
+      if (this.files && this.files[0]) {
+        try {
+          const file = this.files[0];
+          const compressed = await ChecklistFormPage.compressImage(file, 800, 0.7);
+          const target = ChecklistFormPage._pendingPhotoTarget;
+          if (!target) return;
+
+          // Find the photo box and update it
+          const photoBox = document.querySelector(`[data-foto-id="${target.fotoId}"]`);
+          if (photoBox) {
+            const img = photoBox.querySelector('img');
+            if (img) {
+              img.src = compressed;
+              img.style.display = 'block';
+            }
+            // Hide the "Adicionar" button
+            const addBtn = photoBox.querySelector('button');
+            if (addBtn) addBtn.style.display = 'none';
+          }
+
+          const catDb = (ChecklistFormPage.fase || 'entrada') + '_' + target.containerId;
+          ChecklistFormPage.fotosCaptured[target.fotoId] = { categoria: catDb, label: target.label, dados: compressed };
+          ChecklistFormPage._pendingPhotoTarget = null;
+          sessionStorage.removeItem('tjgo_pending_photo');
+        } catch (e) {
+          console.error('Erro ao comprimir imagem:', e);
+          App.toast('Erro ao processar imagem. Tente outra.', 'error');
+        }
+      }
+    });
+
+    freshInput.click();
+  },
+
+  // --- Form State Persistence (survives OS-level browser kills) ---
+  saveFormStateToSession() {
+    try {
+      const state = {
+        page: 'checklist',
+        modo: this.modo,
+        fase: this.fase,
+        checklistId: this.checklistId,
+        isEdit: this.isEdit,
+        isRetomar: this.isRetomar,
+        timestamp: Date.now(),
+        fotos: this.fotosCaptured,
+        fields: {}
+      };
+
+      // Capture all input/select/textarea values
+      const container = document.querySelector('.main-content');
+      if (container) {
+        container.querySelectorAll('input, select, textarea').forEach(el => {
+          if (el.id && el.type !== 'file') {
+            if (el.type === 'checkbox') {
+              state.fields[el.id] = el.checked;
+            } else {
+              state.fields[el.id] = el.value;
+            }
+          }
+        });
+      }
+
+      // Capture checklist button states
+      state.checkBtns = {};
+      document.querySelectorAll('.btn-grid .check-btn').forEach(btn => {
+        const grid = btn.closest('.btn-grid');
+        if (grid) {
+          const key = grid.getAttribute('data-item-idx');
+          if (!state.checkBtns[key]) state.checkBtns[key] = {};
+          const tipo = btn.getAttribute('data-tipo');
+          if (btn.classList.contains('active-sim')) state.checkBtns[key][tipo] = 'active-sim';
+          else if (btn.classList.contains('active-nao')) state.checkBtns[key][tipo] = 'active-nao';
+          else if (btn.classList.contains('active-dan')) state.checkBtns[key][tipo] = 'active-dan';
+        }
+      });
+
+      // Capture fuel selection
+      state.fuelSelected = {};
+      document.querySelectorAll('.fuel-level.selected').forEach(el => {
+        state.fuelSelected[el.getAttribute('data-suffix') || ''] = el.getAttribute('data-fuel');
+      });
+
+      // Capture signatures
+      ['signaturePreview', 'signaturePreview_vistoriador'].forEach(id => {
+        const img = document.getElementById(id);
+        if (img && img.src && img.src.startsWith('data:')) {
+          state.fields['__sig_' + id] = img.src;
+        }
+      });
+
+      sessionStorage.setItem('tjgo_form_state', JSON.stringify(state));
+    } catch(e) {
+      console.warn('Erro ao salvar estado do form:', e);
+    }
+  },
+
+  restoreFormStateFromSession() {
+    try {
+      const raw = sessionStorage.getItem('tjgo_form_state');
+      if (!raw) return false;
+      const state = JSON.parse(raw);
+
+      // Only restore if saved less than 30 minutes ago
+      if (Date.now() - state.timestamp > 30 * 60 * 1000) {
+        sessionStorage.removeItem('tjgo_form_state');
+        sessionStorage.removeItem('tjgo_pending_photo');
+        return false;
+      }
+
+      return state;
+    } catch(e) {
+      return false;
+    }
+  },
+
+  applyRestoredState(state) {
+    if (!state || !state.fields) return;
+
+    // Restore input/select/textarea values
+    Object.entries(state.fields).forEach(([id, value]) => {
+      if (id.startsWith('__sig_')) return; // Handle sigs separately
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === 'checkbox') {
+        el.checked = value;
+      } else {
+        el.value = value;
+      }
+    });
+
+    // Restore checklist buttons
+    if (state.checkBtns) {
+      Object.entries(state.checkBtns).forEach(([key, tipos]) => {
+        Object.entries(tipos).forEach(([tipo, className]) => {
+          const grid = document.querySelector(`[data-item-idx="${key}"]`);
+          if (grid) {
+            const btn = grid.querySelector(`[data-tipo="${tipo}"]`);
+            if (btn && className) btn.classList.add(className);
+          }
+        });
+      });
+    }
+
+    // Restore fuel
+    if (state.fuelSelected) {
+      Object.entries(state.fuelSelected).forEach(([suffix, fuel]) => {
+        const el = document.querySelector(`.fuel-level[data-fuel="${fuel}"][data-suffix="${suffix}"]`);
+        if (el) el.classList.add('selected');
+        const hidden = document.getElementById('valorCombustivel' + suffix);
+        if (hidden) hidden.value = fuel;
+      });
+    }
+
+    // Restore signatures
+    ['signaturePreview', 'signaturePreview_vistoriador'].forEach(id => {
+      const sigData = state.fields['__sig_' + id];
+      if (sigData) {
+        const img = document.getElementById(id);
+        if (img) img.src = sigData;
+      }
+    });
+
+    // Restore captured photos
+    if (state.fotos) {
+      this.fotosCaptured = state.fotos;
+      Object.entries(state.fotos).forEach(([fotoId, fotoData]) => {
+        const box = document.querySelector(`[data-foto-id="${fotoId}"]`);
+        if (box && fotoData.dados) {
+          const img = box.querySelector('img');
+          if (img) { img.src = fotoData.dados; img.style.display = 'block'; }
+          const addBtn = box.querySelector('button');
+          if (addBtn) addBtn.style.display = 'none';
+        }
+      });
+    }
+
+    // Clear saved state
+    sessionStorage.removeItem('tjgo_form_state');
+    sessionStorage.removeItem('tjgo_pending_photo');
+    App.toast('Formulário restaurado automaticamente!', 'success');
   },
 
   compressImage(file, maxWidth, quality) {
