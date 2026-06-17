@@ -9,6 +9,19 @@ import { authMiddleware } from '../middleware/auth';
 
 const router = express.Router();
 
+// GET /api/v1/auth/users
+router.get('/users', async (req: Request, res: Response) => {
+  try {
+    const result = await query(
+      'SELECT nome, matricula FROM usuarios WHERE ativo = true ORDER BY nome'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao listar usuários públicos:', err);
+    res.status(500).json({ error: 'Erro interno' });
+  }
+});
+
 // POST /api/v1/auth/login
 router.post('/login', async (req: Request, res: Response): Promise<any> => {
   try {

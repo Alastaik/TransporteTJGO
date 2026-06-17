@@ -19,7 +19,7 @@ const API = {
 
     const res = await fetch(`${this.baseUrl}${endpoint}`, opts);
 
-    if (res.status === 401) {
+    if (res.status === 401 && endpoint !== '/auth/login') {
       Auth.handleUnauthorized();
       throw new Error('Não autorizado');
     }

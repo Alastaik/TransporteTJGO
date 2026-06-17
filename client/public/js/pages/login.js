@@ -19,11 +19,7 @@ const LoginPage = {
             <label><span class="material-symbols-rounded">person</span> Vistoriador</label>
             <div class="select-wrapper">
               <select id="loginMatricula" required onchange="LoginPage.onUserSelect(this.value)">
-                <option value="">— Selecione o Vistoriador —</option>
-                <option value="5055920">FERNANDO LACERDA SILVA (5055920)</option>
-                <option value="02588">VINICIUS TALES AZEVEDO COSTA (02588)</option>
-                <option value="02363">JORDANA FERNANDES RODRIGUES DE SOUSA (02363)</option>
-                <option value="custom">Outro (digitar matrícula)</option>
+                <option value="">— Carregando Vistoriadores... —</option>
               </select>
               <span class="material-symbols-rounded select-icon">expand_more</span>
             </div>
@@ -59,6 +55,25 @@ const LoginPage = {
     const customField = document.getElementById('customMatriculaField');
     if (customField) {
       customField.style.display = value === 'custom' ? 'flex' : 'none';
+    }
+  },
+
+  async afterRender() {
+    const select = document.getElementById('loginMatricula');
+    try {
+      const res = await fetch('/api/v1/auth/users');
+      const users = await res.json();
+      
+      let html = '<option value="">— Selecione o Vistoriador —</option>';
+      users.forEach(u => {
+        html += `<option value="${u.matricula}">${u.nome} (${u.matricula})</option>`;
+      });
+      html += '<option value="custom">Outro (digitar matrícula)</option>';
+      
+      select.innerHTML = html;
+    } catch (err) {
+      console.error('Erro ao carregar usuarios', err);
+      select.innerHTML = '<option value="">— Selecione o Vistoriador —</option><option value="custom">Outro (digitar matrícula)</option>';
     }
   },
 
