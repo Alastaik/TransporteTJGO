@@ -43,7 +43,7 @@ function formatHora(raw) {
   return s;
 }
 
-window.generateProfessionalPDF = async function(data, modo) {
+window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
   try {
     App.showLoading('Gerando PDF Profissional...');
     const { jsPDF } = window.jspdf;
@@ -70,7 +70,12 @@ window.generateProfessionalPDF = async function(data, modo) {
       console.warn('Logo não carregado:', e);
     }
 
-    const tipos = data.tipo === 'troca' ? ['oficial', 'emprestimo'] : ['oficial'];
+    let tipos = ['oficial'];
+    if (tiposFiltro) {
+        tipos = tiposFiltro === 'ambos' ? ['oficial', 'emprestimo'] : [tiposFiltro];
+    } else {
+        tipos = data.tipo === 'troca' ? ['oficial', 'emprestimo'] : ['oficial'];
+    }
 
     tipos.forEach((t, pageIndex) => {
       if (pageIndex > 0) doc.addPage();
@@ -544,13 +549,15 @@ window.generateProfessionalPDF = async function(data, modo) {
       doc.setTextColor(...PRETO);
     });
 
-    const fileName = `Checklist_${data.id}_${modo.toUpperCase()}_${Date.now()}.pdf`;
-    doc.save(fileName);
-    App.hideLoading();
-    App.toast('PDF gerado e baixado com sucesso!', 'success');
-  } catch (error) {
-    App.hideLoading();
-    console.error('Erro na geração do PDF:', error);
-    throw new Error('Falha na geração do PDF: ' + error.message);
-  }
-};
+      const fileName = `Checklist_Profissional_${data.veiculo_placa || 'N/A'}_${new Date().getTime()}.pdf`;
+      doc.save(fileName);
+      
+      App.hideLoading();
+      return doc;
+    } catch (err) {
+      App.hideLoading();
+      App.toast('Erro ao gerar PDF: ' + err.message, 'error');
+      console.error(err);
+      return null;
+    }
+  };
