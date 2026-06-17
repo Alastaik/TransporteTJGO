@@ -790,7 +790,13 @@ const ChecklistFormPage = {
       </td>
       <td>
         <select id="select-item-outro${suffix}">
-          ${this.DEFEITOS_OPTIONS.map(d => `<option value="${d === 'Normal' ? '' : d}">${d}<  // Build photo grid
+          ${this.DEFEITOS_OPTIONS.map(d => `<option value="${d === 'Normal' ? '' : d}">${d}</option>`).join('')}
+        </select>
+      </td>`;
+    tbody.appendChild(trOutro);
+  },
+
+  // Build photo grid
   buildPhotoGrid(containerId, labelsOrCount, formId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -996,11 +1002,6 @@ const ChecklistFormPage = {
   // Keep old method name as alias for any other code that calls it
   compressImage(file, maxWidth, quality) {
     return this.compressImageSafe(file);
-  },vo)
-        const objectUrl = URL.createObjectURL(file);
-        resolve(objectUrl);
-      }
-    });
   },
 
   // Mark checklist item
