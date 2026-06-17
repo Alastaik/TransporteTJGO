@@ -480,10 +480,30 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
           });
         };
 
-        const entradaGerais = fotosDoVeiculo.filter(f => f.categoria.includes('entrada_') && f.categoria.includes('Gerais'));
-        const entradaAvarias = fotosDoVeiculo.filter(f => f.categoria.includes('entrada_') && f.categoria.includes('Avarias'));
-        const saidaGerais = fotosDoVeiculo.filter(f => f.categoria.includes('saida_') && f.categoria.includes('Gerais'));
-        const saidaAvarias = fotosDoVeiculo.filter(f => f.categoria.includes('saida_') && f.categoria.includes('Avarias'));
+          const entradaGerais = fotosDoVeiculo.filter(f => {
+            const cat = (f.categoria || '').toLowerCase();
+            const isEntrada = cat.includes('entrada') || (!cat.includes('saida') && !cat.includes('entrada'));
+            const isGeral = cat.includes('geral') || cat.includes('gerais');
+            return isEntrada && isGeral;
+          });
+          const entradaAvarias = fotosDoVeiculo.filter(f => {
+            const cat = (f.categoria || '').toLowerCase();
+            const isEntrada = cat.includes('entrada') || (!cat.includes('saida') && !cat.includes('entrada'));
+            const isAvaria = cat.includes('avaria');
+            return isEntrada && isAvaria;
+          });
+          const saidaGerais = fotosDoVeiculo.filter(f => {
+            const cat = (f.categoria || '').toLowerCase();
+            const isSaida = cat.includes('saida');
+            const isGeral = cat.includes('geral') || cat.includes('gerais');
+            return isSaida && isGeral;
+          });
+          const saidaAvarias = fotosDoVeiculo.filter(f => {
+            const cat = (f.categoria || '').toLowerCase();
+            const isSaida = cat.includes('saida');
+            const isAvaria = cat.includes('avaria');
+            return isSaida && isAvaria;
+          });
 
         renderFotos('VISTORIA DE ENTRADA — GERAL', entradaGerais);
         renderFotos('VISTORIA DE ENTRADA — AVARIAS', entradaAvarias);
