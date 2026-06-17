@@ -478,6 +478,8 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
             if (col === 1) { col = 0; y += rowH; } 
             else { col = 1; }
           });
+          
+          if (col === 1) y += rowH;
         };
 
           const entradaGerais = fotosDoVeiculo.filter(f => {
