@@ -24,14 +24,14 @@ const ASSETS = [
   'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0'
 ];
 
-const CACHE_NAME = 'tjgo-transporte-v13-network-first';
+const CACHE_NAME = 'tjgo-transporte-v14-network-first';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       // Intentionally not failing if a font fails to load
       return Promise.allSettled(
-        ASSETS.map(url => cache.add(url).catch(err => console.warn(`Falha ao cachear ${url}:`, err)))
+        ASSETS.map(url => cache.add(new Request(url, { cache: 'no-cache' })).catch(err => console.warn(`Falha ao cachear ${url}:`, err)))
       );
     })
   );
@@ -57,8 +57,14 @@ self.addEventListener('fetch', (e) => {
   
   // Estratégia: NETWORK FIRST (Tenta a rede primeiro, se falhar/offline usa o cache)
   // Isso resolve 100% o problema de ficar com versão antiga presa no cache
+  
+  // Bypass HTTP cache on GET requests
+  const fetchRequest = (e.request.method === 'GET') 
+    ? new Request(e.request.url, { cache: 'no-cache', mode: e.request.mode === 'navigate' ? 'navigate' : 'cors', credentials: e.request.credentials }) 
+    : e.request;
+
   e.respondWith(
-    fetch(e.request)
+    fetch(fetchRequest)
       .then((networkResponse) => {
         // Se a requisição foi bem sucedida, atualiza o cache silenciosamente
         if (networkResponse && networkResponse.status === 200 && e.request.method === 'GET') {
