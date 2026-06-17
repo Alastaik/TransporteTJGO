@@ -1,4 +1,3 @@
-const CACHE_NAME = 'tjgo-transporte-v12';
 const ASSETS = [
   './',
   './index.html',
@@ -25,6 +24,8 @@ const ASSETS = [
   'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0'
 ];
 
+const CACHE_NAME = 'tjgo-transporte-v13-network-first';
+
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -34,7 +35,7 @@ self.addEventListener('install', (e) => {
       );
     })
   );
-  self.skipWaiting();
+  self.skipWaiting(); // Força a instalação imediata
 });
 
 self.addEventListener('activate', (e) => {
@@ -45,30 +46,40 @@ self.addEventListener('activate', (e) => {
       );
     })
   );
-  self.clients.claim();
+  self.clients.claim(); // Assume o controle imediatamente
 });
 
 self.addEventListener('fetch', (e) => {
-  // Skip API requests (they are handled by app logic for offline fallback)
-  if (e.request.url.includes('/api/')) {
+  // Ignora requisições de API (tratadas na lógica do app) e extensões
+  if (e.request.url.includes('/api/') || e.request.url.startsWith('chrome-extension')) {
     return;
   }
   
+  // Estratégia: NETWORK FIRST (Tenta a rede primeiro, se falhar/offline usa o cache)
+  // Isso resolve 100% o problema de ficar com versão antiga presa no cache
   e.respondWith(
-    caches.match(e.request).then((res) => {
-      return res || fetch(e.request).then((fetchRes) => {
-        return caches.open(CACHE_NAME).then((cache) => {
-          if (e.request.method === 'GET' && !e.request.url.startsWith('chrome-extension')) {
-            cache.put(e.request, fetchRes.clone());
+    fetch(e.request)
+      .then((networkResponse) => {
+        // Se a requisição foi bem sucedida, atualiza o cache silenciosamente
+        if (networkResponse && networkResponse.status === 200 && e.request.method === 'GET') {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(e.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // Se a rede falhar (OFFLINE), busca no cache
+        return caches.match(e.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
           }
-          return fetchRes;
+          // Fallback para index.html em caso de navegação offline
+          if (e.request.mode === 'navigate') {
+            return caches.match('./index.html');
+          }
         });
-      });
-    }).catch(() => {
-      // Fallback for html pages
-      if (e.request.mode === 'navigate') {
-        return caches.match('./index.html');
-      }
-    })
+      })
   );
 });

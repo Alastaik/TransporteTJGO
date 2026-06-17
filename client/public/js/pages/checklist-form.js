@@ -51,19 +51,37 @@ const ChecklistFormPage = {
     } else {
         if (btnSaida) { btnSaida.classList.remove('btn-primary'); btnSaida.classList.add('btn-outline'); }
         if (btnEntrada) { btnEntrada.classList.remove('btn-outline'); btnEntrada.classList.add('btn-primary'); }
-        document.getElementById('saveArea').innerHTML = `
-            <button type="button" id="btnSalvarEntrada" class="btn btn-primary btn-lg" onclick="ChecklistFormPage.salvarEntrada()">
-              <span class="material-symbols-rounded">save</span>
-              SALVAR ENTRADA (Em Andamento)
-            </button>
-            <button type="button" id="btnSalvarUnico" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarUnico()" style="display: none;">
-              <span class="material-symbols-rounded">check_circle</span>
-              CONCLUIR CHECKLIST ÚNICO
-            </button>
-        `;
+        
+        const saveAreaContent = document.getElementById('saveAreaContent');
+        if (saveAreaContent) {
+          saveAreaContent.innerHTML = `
+              <button type="button" id="btnSalvarEntrada" class="btn btn-primary btn-lg" onclick="ChecklistFormPage.salvarEntrada()">
+                <span class="material-symbols-rounded">save</span>
+                SALVAR ENTRADA (Em Andamento)
+              </button>
+              <button type="button" id="btnSalvarUnico" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarUnico()" style="display: none;">
+                <span class="material-symbols-rounded">check_circle</span>
+                CONCLUIR CHECKLIST ÚNICO
+              </button>
+          `;
+        }
         // Trigger checkbox check
         const chkUnico = document.getElementById('chkUnico');
         if (chkUnico) this.toggleChecklistUnico(chkUnico);
+    }
+  },
+
+  toggleSaveArea() {
+    const content = document.getElementById('saveAreaContent');
+    const icon = document.getElementById('saveAreaIcon');
+    if (content) {
+      if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        if (icon) icon.textContent = 'keyboard_arrow_down';
+      } else {
+        content.classList.add('collapsed');
+        if (icon) icon.textContent = 'keyboard_arrow_up';
+      }
     }
   },
 
@@ -188,49 +206,56 @@ const ChecklistFormPage = {
 
           <!-- Save Actions -->
           <div class="save-area" id="saveArea">
-            ${this.fase === 'entrada' ? `
-            <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 20px; text-align: left;">
-              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-main); font-size: 15px;">
-                <input type="checkbox" id="checkEntradaSaida" style="width: 20px; height: 20px;" onchange="ChecklistFormPage.toggleChecklistUnico(this.checked)">
-                <strong>Registrar Entrada e Saída (Checklist Único)</strong>
-              </label>
-              <div id="avisoChecklistUnico" style="display: none; margin-top: 10px; font-size: 13px; color: var(--amarelo);">
-                <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">warning</span>
-                Atenção: Ao marcar esta opção, o checklist será concluído imediatamente. Os dados preenchidos serão salvos tanto para a Entrada quanto para a Saída.
-              </div>
+            <div class="save-area-toggle" onclick="ChecklistFormPage.toggleSaveArea()">
+              <span class="material-symbols-rounded" id="saveAreaIcon">keyboard_arrow_down</span>
+              <span>Ações do Checklist</span>
             </div>
-
-            <button type="button" id="btnSalvarEntrada" class="btn btn-primary btn-lg" onclick="ChecklistFormPage.salvarEntrada()">
-              <span class="material-symbols-rounded">save</span>
-              ${this.isEdit ? 'SALVAR ALTERAÇÕES (ENTRADA)' : 'SALVAR ENTRADA (Em Andamento)'}
-            </button>
-            ${!this.isEdit ? `
-            <button type="button" id="btnSalvarUnico" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarUnico()" style="display: none;">
-              <span class="material-symbols-rounded">check_circle</span>
-              CONCLUIR CHECKLIST ÚNICO
-            </button>
-            ` : ''}
-            ` : `
-            <button type="button" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarSaida()">
-              <span class="material-symbols-rounded">check_circle</span>
-              ${this.isEdit ? 'SALVAR ALTERAÇÕES (SAÍDA)' : (this.checklistId ? 'CONCLUIR SAÍDA' : 'SALVAR SAÍDA (Em Andamento)')}
-            </button>
-            `}
             
-            <button type="button" class="btn btn-outline btn-lg" onclick="ChecklistFormPage.gerarPDF('oficial')">
-              <span class="material-symbols-rounded">description</span>
-              GERAR PDF
-            </button>
-            ${this.modo === 'troca' ? `
-            <button type="button" class="btn btn-outline btn-lg" onclick="ChecklistFormPage.gerarPDF('emprestimo')" style="border-color:var(--verde);color:var(--verde);">
-              <span class="material-symbols-rounded">description</span>
-              GERAR PDF — EMPRÉSTIMO
-            </button>
-            <button type="button" class="btn btn-outline btn-lg" onclick="ChecklistFormPage.gerarPDF('ambos')" style="border-color:var(--roxo);color:var(--roxo);">
-              <span class="material-symbols-rounded">picture_as_pdf</span>
-              GERAR PDF UNIFICADO
-            </button>
-            ` : ''}
+            <div id="saveAreaContent" class="save-area-content">
+              ${this.fase === 'entrada' ? `
+              <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 20px; text-align: left;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-main); font-size: 15px;">
+                  <input type="checkbox" id="checkEntradaSaida" style="width: 20px; height: 20px;" onchange="ChecklistFormPage.toggleChecklistUnico(this.checked)">
+                  <strong>Registrar Entrada e Saída (Checklist Único)</strong>
+                </label>
+                <div id="avisoChecklistUnico" style="display: none; margin-top: 10px; font-size: 13px; color: var(--amarelo);">
+                  <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">warning</span>
+                  Atenção: Ao marcar esta opção, o checklist será concluído imediatamente. Os dados preenchidos serão salvos tanto para a Entrada quanto para a Saída.
+                </div>
+              </div>
+
+              <button type="button" id="btnSalvarEntrada" class="btn btn-primary btn-lg" onclick="ChecklistFormPage.salvarEntrada()">
+                <span class="material-symbols-rounded">save</span>
+                ${this.isEdit ? 'SALVAR ALTERAÇÕES (ENTRADA)' : 'SALVAR ENTRADA (Em Andamento)'}
+              </button>
+              ${!this.isEdit ? `
+              <button type="button" id="btnSalvarUnico" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarUnico()" style="display: none;">
+                <span class="material-symbols-rounded">check_circle</span>
+                CONCLUIR CHECKLIST ÚNICO
+              </button>
+              ` : ''}
+              ` : `
+              <button type="button" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarSaida()">
+                <span class="material-symbols-rounded">check_circle</span>
+                ${this.isEdit ? 'SALVAR ALTERAÇÕES (SAÍDA)' : (this.checklistId ? 'CONCLUIR SAÍDA' : 'SALVAR SAÍDA (Em Andamento)')}
+              </button>
+              `}
+              
+              <button type="button" class="btn btn-outline btn-lg" onclick="ChecklistFormPage.gerarPDF('oficial')">
+                <span class="material-symbols-rounded">description</span>
+                GERAR PDF
+              </button>
+              ${this.modo === 'troca' ? `
+              <button type="button" class="btn btn-outline btn-lg" onclick="ChecklistFormPage.gerarPDF('emprestimo')" style="border-color:var(--verde);color:var(--verde);">
+                <span class="material-symbols-rounded">description</span>
+                GERAR PDF — EMPRÉSTIMO
+              </button>
+              <button type="button" class="btn btn-outline btn-lg" onclick="ChecklistFormPage.gerarPDF('ambos')" style="border-color:var(--roxo);color:var(--roxo);">
+                <span class="material-symbols-rounded">picture_as_pdf</span>
+                GERAR PDF UNIFICADO
+              </button>
+              ` : ''}
+            </div>
           </div>
 
         </div>
@@ -776,7 +801,7 @@ const ChecklistFormPage = {
 
       const div = document.createElement('div');
       div.className = 'photo-box';
-      div.innerHTML = `<b>${label}</b><input type="file" accept="image/*" capture="environment" style="margin-top:5px;font-size:11px;"><img alt="${label}">`;
+      div.innerHTML = `<b>${label}</b><input type="file" accept="image/*" style="margin-top:5px;font-size:11px;"><img alt="${label}">`;
 
       const input = div.querySelector('input');
       const img = div.querySelector('img');
