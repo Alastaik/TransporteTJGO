@@ -24,7 +24,7 @@ const ASSETS = [
   'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0'
 ];
 
-const CACHE_NAME = 'tjgo-transporte-v15-network-first';
+const CACHE_NAME = 'tjgo-transporte-v16-network-first';
 
 self.addEventListener('install', (e) => {
   e.waitUntil(

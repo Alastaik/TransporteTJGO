@@ -89,7 +89,7 @@ const LoginPage = {
     if (matricula === 'custom') {
       matricula = document.getElementById('loginCustomMatricula').value;
     }
-    const pin = document.getElementById('loginPin').value;
+    const pin = document.getElementById('loginPin').value.trim();
 
     if (!matricula) {
       errorEl.textContent = 'Selecione um vistoriador';

@@ -101,7 +101,7 @@ const AdminPage = {
   async loadUsers() {
     try {
       const res = await API.get('/users');
-      this.users = res.data || [];
+      this.users = Array.isArray(res) ? res : (res.data || []);
       this.renderTable();
     } catch (err) {
       App.toast('Erro ao carregar usuários.', 'error');
@@ -134,6 +134,9 @@ const AdminPage = {
           </span>
         </td>
         <td style="text-align:right">
+          <button class="btn-icon" title="Resetar Senha (1234)" onclick="AdminPage.resetPin(${u.id})">
+            <span class="material-symbols-rounded" style="font-size:18px; color:var(--orange)">lock_reset</span>
+          </button>
           <button class="btn-icon" title="Editar" onclick="AdminPage.editUser(${u.id})">
             <span class="material-symbols-rounded" style="font-size:18px">edit</span>
           </button>
@@ -215,7 +218,21 @@ const AdminPage = {
       App.toast(`Usuário ${action}do com sucesso.`, 'success');
       await this.loadUsers();
     } catch(err) {
-      App.toast(err.message || 'Erro ao alterar status.', 'error');
+      App.toast(err.message || 'Erro.', 'error');
+    } finally {
+      App.hideLoading();
+    }
+  },
+
+  async resetPin(id) {
+    if (!await App.confirm('Resetar Senha', 'Deseja redefinir a senha deste usuário para o padrão (1234)?')) return;
+    
+    App.showLoading('Redefinindo...');
+    try {
+      await API.put('/users/' + id, { pin: '1234' });
+      App.toast('Senha redefinida para 1234 com sucesso.', 'success');
+    } catch(err) {
+      App.toast(err.message || 'Erro ao redefinir senha.', 'error');
     } finally {
       App.hideLoading();
     }

@@ -665,15 +665,28 @@ const ChecklistFormPage = {
 
       // Restore photos from server
       if (data.fotos && data.fotos.length > 0) {
-        data.fotos.forEach(foto => {
+        // Sort: entrada first, so saida overwrites if present
+        const sortedFotos = [...data.fotos].sort((a, b) => {
+          if (a.categoria.startsWith('entrada') && b.categoria.startsWith('saida')) return -1;
+          if (a.categoria.startsWith('saida') && b.categoria.startsWith('entrada')) return 1;
+          return 0;
+        });
+
+        sortedFotos.forEach(foto => {
           let cat = foto.categoria;
           let isCurrentPhase = true;
+          let isFallback = false;
 
           if (cat.startsWith('entrada_') || cat.startsWith('saida_') || cat.startsWith('unico_')) {
-            if (!cat.startsWith(this.fase + '_') && !cat.startsWith('unico_')) isCurrentPhase = false;
+            if (this.fase === 'saida' && cat.startsWith('entrada_')) {
+              // We are in saida, and we found an entrada photo. Use it as fallback!
+              isCurrentPhase = true;
+              isFallback = true;
+            } else if (!cat.startsWith(this.fase + '_') && !cat.startsWith('unico_')) {
+              isCurrentPhase = false;
+            }
             cat = cat.replace(/^(entrada|saida|unico)_/, '');
           } else {
-             // Old format, assume it belongs to the first phase or just load it anyway
              if (this.fase !== 'entrada' && !this.isRetomar) isCurrentPhase = false;
           }
 
@@ -690,6 +703,19 @@ const ChecklistFormPage = {
               if (img && foto.dados) {
                 img.src = foto.dados;
                 img.style.display = 'block';
+
+                const fotoId = box.getAttribute('data-foto-id');
+                const targetContainerId = box.getAttribute('data-container-id');
+                
+                // Add to captured so it gets saved correctly!
+                const catDb = (this.fase || 'entrada') + '_' + targetContainerId;
+                this.fotosCaptured[fotoId] = { categoria: catDb, label: foto.label, dados: foto.dados };
+
+                // Adjust UI: Hide camera/gallery, show Remove
+                const actions = box.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
+                actions.forEach(a => a.style.display = 'none');
+                const removeBtn = box.querySelector('.photo-remove-btn');
+                if (removeBtn) removeBtn.style.display = 'flex';
               }
             }
           });
@@ -808,7 +834,6 @@ const ChecklistFormPage = {
     for (let i = 0; i < count; i++) {
       const label = isAvarias ? `Avaria ${i + 1}` : labelsOrCount[i];
       const fotoId = `foto-${prefix}-${formId}-${i}`;
-
       const div = document.createElement('div');
       div.className = 'photo-box';
       div.setAttribute('data-foto-id', fotoId);
@@ -826,6 +851,9 @@ const ChecklistFormPage = {
             <span class="material-symbols-rounded" style="font-size:16px!important;">photo_library</span> Galeria
             <input type="file" accept="image/*" style="display:none;" data-foto-id="${fotoId}" data-container-id="${containerId}" data-label="${label}">
           </label>
+          <button type="button" class="btn btn-sm btn-outline photo-action-btn photo-remove-btn" style="display:none; color: var(--red); border-color: var(--red);" onclick="ChecklistFormPage.removeFoto('${fotoId}')">
+            <span class="material-symbols-rounded" style="font-size:16px!important;">delete</span> Remover
+          </button>
         </div>
         <img alt="${label}">`;
 
@@ -846,14 +874,18 @@ const ChecklistFormPage = {
 
           // Show loading indicator
           const photoBox = document.querySelector(`[data-foto-id="${targetFotoId}"]`);
+          let removeBtn = null;
           if (photoBox) {
-            const actions = photoBox.querySelector('.photo-actions');
-            if (actions) actions.innerHTML = '<div class="loading-inline"><div class="loading-spinner"></div> Processando...</div>';
+            const actions = photoBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
+            actions.forEach(a => a.style.display = 'none');
+            removeBtn = photoBox.querySelector('.photo-remove-btn');
+            if (removeBtn) removeBtn.style.display = 'none';
           }
 
+          App.showLoading('Processando imagem...');
+
           try {
-            const file = this.files[0];
-            const compressed = await ChecklistFormPage.compressImageSafe(file);
+            const compressed = await ChecklistFormPage.compressImageSafe(this.files[0]);
 
             // Update the photo box
             if (photoBox) {
@@ -862,37 +894,54 @@ const ChecklistFormPage = {
                 img.src = compressed;
                 img.style.display = 'block';
               }
-              // Hide the action buttons
-              const actions = photoBox.querySelector('.photo-actions');
-              if (actions) actions.style.display = 'none';
+              // Restore the buttons, but hide camera/gallery and show Remove
+              const actions = photoBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
+              actions.forEach(a => a.style.display = 'none');
+              if (removeBtn) removeBtn.style.display = 'flex';
             }
-
-            const catDb = (ChecklistFormPage.fase || 'entrada') + '_' + targetContainerId;
+          const catDb = (ChecklistFormPage.fase || 'entrada') + '_' + targetContainerId;
             ChecklistFormPage.fotosCaptured[targetFotoId] = { categoria: catDb, label: targetLabel, dados: compressed };
+            ChecklistFormPage.isDirty = true;
           } catch (e) {
-            console.error('Erro ao comprimir imagem:', e);
+            console.error('Erro ao processar imagem:', e);
             App.toast('Erro ao processar imagem. Tente outra.', 'error');
-            // Restore the buttons
+            // Restore the camera/gallery buttons
             if (photoBox) {
-              const actions = photoBox.querySelector('.photo-actions');
-              if (actions) {
-                actions.style.display = '';
-                actions.innerHTML = `
-                  <label class="btn btn-sm btn-outline photo-action-btn">
-                    <span class="material-symbols-rounded" style="font-size:16px!important;">photo_camera</span> Câmera
-                    <input type="file" accept="image/*" capture="environment" style="display:none;" data-foto-id="${targetFotoId}" data-container-id="${targetContainerId}" data-label="${targetLabel}">
-                  </label>
-                  <label class="btn btn-sm btn-outline photo-action-btn">
-                    <span class="material-symbols-rounded" style="font-size:16px!important;">photo_library</span> Galeria
-                    <input type="file" accept="image/*" style="display:none;" data-foto-id="${targetFotoId}" data-container-id="${targetContainerId}" data-label="${targetLabel}">
-                  </label>`;
-              }
+              const actions = photoBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
+              actions.forEach(a => a.style.display = 'flex');
             }
+          } finally {
+            App.hideLoading();
+            this.value = ''; // Reset input
           }
         });
       });
 
       container.appendChild(div);
+    }
+  },
+
+  removeFoto(fotoId) {
+    if (!confirm('Tem certeza que deseja remover esta foto?')) return;
+    
+    // Remove from captured
+    delete this.fotosCaptured[fotoId];
+    this.isDirty = true;
+
+    // Reset UI
+    const photoBox = document.querySelector(`[data-foto-id="${fotoId}"]`);
+    if (photoBox) {
+      const img = photoBox.querySelector('img');
+      if (img) {
+        img.src = '';
+        img.style.display = 'none';
+      }
+      
+      const cameraGalleryBtns = photoBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
+      cameraGalleryBtns.forEach(b => b.style.display = 'inline-flex');
+      
+      const removeBtn = photoBox.querySelector('.photo-remove-btn');
+      if (removeBtn) removeBtn.style.display = 'none';
     }
   },
 

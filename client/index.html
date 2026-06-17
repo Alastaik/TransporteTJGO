@@ -132,35 +132,172 @@
 <script src="js/pages/dashboard.js"></script>
 <script src="js/pages/checklist-form.js"></script>
 <script src="js/pages/checklist-view.js"></script>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="description" content="Sistema de Gestão de Transporte — Tribunal de Justiça do Estado de Goiás">
+  <meta name="theme-color" content="#0a1628">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <title>Transporte TJGO</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Carregando...</div>
+</div>
+
+<!-- Toast container -->
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- Online/Offline indicator -->
+<div id="connectionStatus" class="connection-status">
+  <span class="material-symbols-rounded">wifi_off</span>
+  <span>Modo Offline</span>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app"></div>
+
+<!-- ============ FAB & BOTTOM NAV ============ -->
+<div class="fab-container" id="mainFab">
+  <button class="fab-main" onclick="App.toggleFabMenu()">
+    <span class="material-symbols-rounded">add</span>
+  </button>
+  <div class="fab-menu" id="fabMenu">
+    <button class="fab-item" onclick="App.navigate('checklist', {modo: 'simples'}); App.toggleFabMenu();">
+      <span class="material-symbols-rounded">directions_car</span>
+      <span class="fab-label">Vistoria Simples</span>
+    </button>
+    <button class="fab-item" onclick="App.navigate('checklist', {modo: 'troca'}); App.toggleFabMenu();">
+      <span class="material-symbols-rounded">swap_horiz</span>
+      <span class="fab-label">Troca / Empréstimo</span>
+    </button>
+  </div>
+</div>
+
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-item" onclick="App.navigate('dashboard')" data-tab="dashboard">
+    <span class="material-symbols-rounded">home</span>
+    <span class="nav-label">Início</span>
+  </button>
+  <button class="nav-item" onclick="App.navigate('history')" data-tab="history">
+    <span class="material-symbols-rounded">history</span>
+    <span class="nav-label">Histórico</span>
+  </button>
+  <button class="nav-item" onclick="App.openPinModal()" data-tab="profile">
+    <span class="material-symbols-rounded">person</span>
+    <span class="nav-label">Perfil</span>
+  </button>
+</nav>
+
+
+
+<!-- ============ MODAL DE ASSINATURA ============ -->
+<div class="modal" id="signModal">
+  <div class="modal-content">
+    <h3><span class="material-symbols-rounded">draw</span> Assine no espaço abaixo:</h3>
+    <canvas id="signatureCanvas"></canvas>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="saveSign()">Salvar</button>
+      <button class="btn btn-outline" onclick="clearSign()">Limpar</button>
+      <button class="btn btn-outline-red" onclick="closeSign()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CONFIRM MODAL ============ -->
+<div class="modal" id="confirmModal">
+  <div class="modal-content modal-sm">
+    <h3 id="confirmTitle"></h3>
+    <p id="confirmMessage"></p>
+    <div class="modal-actions">
+      <button class="btn btn-green" id="confirmYes">Confirmar</button>
+      <button class="btn btn-outline" id="confirmNo">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PDF OPTIONS MODAL ============ -->
+<div class="modal" id="pdfModal">
+  <div class="modal-content modal-sm">
+    <h3 id="pdfModalTitle"><span class="material-symbols-rounded">picture_as_pdf</span> Gerar PDF</h3>
+    <p>Selecione o formato de geração:</p>
+    <div class="modal-actions" style="flex-direction: column; gap: 10px;">
+      <button class="btn btn-primary" onclick="window.pdfModalCallback('saida')" style="width: 100%;">
+        <span class="material-symbols-rounded">logout</span> Somente Saída
+      </button>
+      <button class="btn btn-primary" onclick="window.pdfModalCallback('entrada')" style="width: 100%;">
+        <span class="material-symbols-rounded">login</span> Somente Entrada
+      </button>
+      <button class="btn btn-green" onclick="window.pdfModalCallback('completo')" style="width: 100%;">
+        <span class="material-symbols-rounded">file_copy</span> Completo (Comparativo)
+      </button>
+      <button class="btn btn-outline" onclick="document.getElementById('pdfModal').classList.remove('active')" style="width: 100%; margin-top: 10px;">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCRIPTS ============ -->
+<script src="libs/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="js/vehicles.js"></script>
+<script src="js/api.js"></script>
+<script src="js/database.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/sync.js"></script>
+<script src="js/signature.js"></script>
+<script src="js/pdf-generator.js"></script>
+<script src="js/pdf-professional.js"></script>
+<script src="js/pages/login.js"></script>
+<script src="js/pages/dashboard.js"></script>
+<script src="js/pages/checklist-form.js"></script>
+<script src="js/pages/checklist-view.js"></script>
 <script src="js/pages/history.js"></script>
 <script src="js/pages/admin.js"></script>
 <script src="js/app.js"></script>
 
 <!-- PWA Service Worker -->
 <script>
-  if ('serviceWorker' in navigator) {
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        console.log("Nova versão ativada. Recarregando a página...");
-        window.location.reload();
-      }
-    });
-
-    navigator.serviceWorker.register('sw.js')
-        .then(reg => {
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                console.log("Nova versão instalada (baixada no cache).");
-              }
+    if ('serviceWorker' in navigator) {
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          refreshing = true;
+          console.log("Nova versão ativada. Recarregando a página...");
+          window.location.reload();
+        }
+      });
+  
+      // Força o navegador a buscar a versão mais recente do sw.js ignorando cache
+      navigator.serviceWorker.register('sw.js?v=' + new Date().getTime())
+          .then(reg => {
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  console.log("Nova versão instalada (baixada no cache).");
+                }
+              });
             });
-          });
-        })
-        .catch(err => console.log('SW error:', err));
-  }
+            // Tenta atualizar manualmente em background
+            reg.update();
+          })
+          .catch(err => console.error("SW reg falhou:", err));
+    }
 </script>
 
 </body>
