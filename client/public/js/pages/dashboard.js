@@ -332,6 +332,13 @@ const DashboardPage = {
 
   formatDate(dateStr) {
     if (!dateStr) return '';
+    const str = String(dateStr);
+    if (str.length >= 10 && str.charAt(4) === '-') {
+      const parts = str.split('T')[0].split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+    }
     const d = new Date(dateStr);
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   }

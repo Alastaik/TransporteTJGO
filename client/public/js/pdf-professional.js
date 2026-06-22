@@ -23,6 +23,13 @@ function loadImageAsBase64(url) {
 // Helper: formata data ISO para dd/mm/aaaa
 function formatDate(raw) {
   if (!raw) return 'N/A';
+  const str = String(raw);
+  if (str.length >= 10 && str.charAt(4) === '-') {
+    const parts = str.split('T')[0].split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+  }
   try {
     const d = new Date(raw);
     if (isNaN(d.getTime())) return String(raw);
@@ -100,7 +107,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
       doc.text('TRIBUNAL DE JUSTIÇA DO ESTADO DE GOIÁS', 105, 12, { align: 'center' });
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text('SEÇÃO DE TRANSPORTE — CHECKLIST VEICULAR', 105, 19, { align: 'center' });
+      doc.text('DIVISÃO DE TRANSPORTE — CHECKLIST VEICULAR', 105, 19, { align: 'center' });
       doc.setFontSize(9);
       const subtipo = t === 'emprestimo' ? 'VEÍCULO EMPRÉSTIMO' : 'VEÍCULO OFICIAL';
       doc.text(`Modo: ${modo.toUpperCase()} | ${subtipo}`, 105, 25, { align: 'center' });
@@ -154,11 +161,11 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
         pairs.forEach((pair, i) => {
           const x = M + (i * colW);
           doc.setFont('helvetica', 'bold');
+          const labelW = doc.getTextWidth(pair[0] + ': ');
           doc.text(pair[0] + ':', x, y);
           doc.setFont('helvetica', 'normal');
-          const labelW = doc.getTextWidth(pair[0] + ': ');
           const val = String(pair[1] || 'N/A');
-          doc.text(val, x + labelW, y);
+          doc.text(val, x + labelW + 1, y);
         });
         y += 5.5;
       };
@@ -256,10 +263,11 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
       ]);
       addInfoRow([
         ['Ano', data[`${p}ano`] || data.veiculo_ano],
-        ['Motor', data[`${p}motor`] || data.veiculo_motor],
-        ['Unidade', data.unidade]
+        ['Placa Desc.', data[`${p}placa_descaract`] || data.veiculo_placa_descaract],
+        ['Motor', data[`${p}motor`] || data.veiculo_motor]
       ]);
       addInfoRow([
+        ['Unidade', data.unidade],
         ['Destino', data.destino],
         ['Objetivo', data.objetivo]
       ]);
@@ -280,7 +288,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
       // SAÍDA
       // ==========================================
       if (modo === 'saida' || modo === 'completo') {
-        addSection('Vistoria de Saída');
+        addSection('Vistoria de Entrega');
         addInfoRow([
           ['Data', formatDate(data[`${p}saida_data`])],
           ['Hora', formatHora(data[`${p}saida_hora`])],
@@ -299,7 +307,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
         } catch (e) {}
 
         if (chkSaida.length > 0) {
-          addSubSection('Itens Inspecionados — Saída');
+          addSubSection('Itens Inspecionados — Entrega');
           addChecklistTable(chkSaida);
         }
 
@@ -321,7 +329,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
       // ==========================================
       if (modo === 'entrada' || modo === 'completo') {
         if (data[`${p}entrada_data`]) {
-          addSection('Vistoria de Entrada');
+          addSection('Vistoria de Devolução');
           addInfoRow([
             ['Data', formatDate(data[`${p}entrada_data`])],
             ['Hora', formatHora(data[`${p}entrada_hora`])],
@@ -340,7 +348,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
           } catch (e) {}
 
           if (chkEntrada.length > 0) {
-            addSubSection('Itens Inspecionados — Entrada');
+            addSubSection('Itens Inspecionados — Devolução');
             addChecklistTable(chkEntrada);
           }
 
@@ -357,11 +365,11 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
           y += 4;
         } else {
           checkPage(10);
-          addSection('Vistoria de Entrada');
+          addSection('Vistoria de Devolução');
           doc.setFont('helvetica', 'italic');
           doc.setFontSize(8);
           doc.setTextColor(150, 150, 150);
-          doc.text('Vistoria de entrada ainda não realizada.', M + 2, y);
+          doc.text('Vistoria de devolução ainda não realizada.', M + 2, y);
           doc.setTextColor(...PRETO);
           y += 8;
         }
@@ -507,10 +515,10 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
             return isSaida && isAvaria;
           });
 
-        renderFotos('VISTORIA DE ENTRADA — GERAL', entradaGerais);
-        renderFotos('VISTORIA DE ENTRADA — AVARIAS', entradaAvarias);
-        renderFotos('VISTORIA DE SAÍDA — GERAL', saidaGerais);
-        renderFotos('VISTORIA DE SAÍDA — AVARIAS', saidaAvarias);
+        renderFotos('VISTORIA DE DEVOLUÇÃO — GERAL', entradaGerais);
+        renderFotos('VISTORIA DE DEVOLUÇÃO — AVARIAS', entradaAvarias);
+        renderFotos('VISTORIA DE ENTREGA — GERAL', saidaGerais);
+        renderFotos('VISTORIA DE ENTREGA — AVARIAS', saidaAvarias);
       }
 
       // ==========================================

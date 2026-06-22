@@ -7,10 +7,17 @@ const ChecklistViewPage = {
   // Helpers de formatação
   fmtDate(raw) {
     if (!raw) return '—';
+    const str = String(raw);
+    if (str.length >= 10 && str.charAt(4) === '-') {
+      const parts = str.split('T')[0].split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+    }
     try {
       const d = new Date(raw);
       if (isNaN(d.getTime())) return String(raw);
-      return d.toLocaleDateString('pt-BR');
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
     } catch(e) { return String(raw); }
   },
   fmtHora(raw) {
@@ -92,19 +99,19 @@ const ChecklistViewPage = {
       </div>
     </div>
 
-    <!-- Comparativo Entrada/Saída -->
+    <!-- Comparativo Devolução/Entrega -->
     <div class="card">
-      <h2><span class="material-symbols-rounded section-icon">compare_arrows</span> ENTRADA vs SAÍDA</h2>
+      <h2><span class="material-symbols-rounded section-icon">compare_arrows</span> DEVOLUÇÃO vs ENTREGA</h2>
       <div class="compare-grid">
         <div class="compare-col">
-          <div class="compare-header compare-entrada">ENTRADA</div>
+          <div class="compare-header compare-entrada">DEVOLUÇÃO</div>
           <div class="compare-item"><span class="compare-label">Data</span><span>${this.fmtDate(d.entrada_data)}</span></div>
           <div class="compare-item"><span class="compare-label">Hora</span><span>${this.fmtHora(d.entrada_hora)}</span></div>
           <div class="compare-item"><span class="compare-label">KM</span><span>${this.fmtKm(d.entrada_km)}</span></div>
           <div class="compare-item"><span class="compare-label">Combustível</span><span>${d.entrada_combustivel || '—'}</span></div>
         </div>
         <div class="compare-col">
-          <div class="compare-header compare-saida">SAÍDA</div>
+          <div class="compare-header compare-saida">ENTREGA</div>
           <div class="compare-item"><span class="compare-label">Data</span><span>${this.fmtDate(d.saida_data)}</span></div>
           <div class="compare-item"><span class="compare-label">Hora</span><span>${this.fmtHora(d.saida_hora)}</span></div>
           <div class="compare-item"><span class="compare-label">KM</span><span>${this.fmtKm(d.saida_km)}</span></div>
@@ -128,13 +135,13 @@ const ChecklistViewPage = {
     <div class="save-area">
       ${d.status === 'em_andamento' ? `
       <button class="btn btn-primary btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, retomar: true})">
-        <span class="material-symbols-rounded">edit</span> RETOMAR / COMPLETAR SAÍDA
+        <span class="material-symbols-rounded">edit</span> RETOMAR / COMPLETAR ENTREGA
       </button>` : `
       <button class="btn btn-primary btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, edit: 'entrada'})">
-        <span class="material-symbols-rounded">edit</span> EDITAR ENTRADA
+        <span class="material-symbols-rounded">edit</span> EDITAR DEVOLUÇÃO
       </button>
       <button class="btn btn-primary btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, edit: 'saida'})">
-        <span class="material-symbols-rounded">edit</span> EDITAR SAÍDA
+        <span class="material-symbols-rounded">edit</span> EDITAR ENTREGA
       </button>`}
       <div class="view-actions">
       <button class="btn btn-primary btn-lg" onclick="ChecklistViewPage.downloadPDF(${d.id})">
