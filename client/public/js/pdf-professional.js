@@ -129,7 +129,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
 
       // Seção com barra colorida
       const addSection = (title) => {
-        y += 3; // margem superior
+        y += 5; // Margem extra para não grudar no texto anterior
         checkPage(12);
         doc.setFillColor(...AZUL);
         doc.rect(M, y, W, 7, 'F');
@@ -138,12 +138,12 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
         doc.setFontSize(9);
         doc.text('  ' + title.toUpperCase(), M + 2, y + 5);
         doc.setTextColor(...PRETO);
-        y += 9; // margem inferior reduzida
+        y += 10; // Margem para o conteúdo abaixo
       };
 
       // Sub-seção cinza
       const addSubSection = (title) => {
-        y += 2;
+        y += 4; // Margem superior
         checkPage(10);
         doc.setFillColor(...AZUL_CLARO);
         doc.rect(M, y, W, 5, 'F');
@@ -152,7 +152,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
         doc.setTextColor(...CINZA_HEADER);
         doc.text(title, M + 2, y + 3.5);
         doc.setTextColor(...PRETO);
-        y += 7;
+        y += 8; // Margem inferior
       };
 
       // Linha label: valor (em 2 ou 3 colunas)
@@ -174,7 +174,20 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
           }
           
           doc.setFont('helvetica', 'normal');
-          const val = String(pair[1] || 'N/A');
+          const valRaw = String(pair[1] || 'N/A').replace(/\r?\n/g, ' ');
+          
+          // Truncar com '...' se for ultrapassar a coluna
+          const maxValW = colW - labelW - 2.5; 
+          let val = valRaw;
+          if (maxValW > 10) {
+            const lines = doc.splitTextToSize(valRaw, maxValW);
+            if (lines && lines.length > 1) {
+              val = lines[0].substring(0, lines[0].length - 2) + '...';
+            } else if (lines && lines.length === 1) {
+              val = lines[0];
+            }
+          }
+          
           doc.text(val, x + labelW + 1.5, y); // 1.5mm de espaço padronizado
         });
         y += 5.5;
@@ -268,17 +281,21 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
       addSection('Dados do Veículo e Viagem');
       addInfoRow([
         ['Placa', data[`${p}placa`] || data.veiculo_placa],
-        ['Modelo', (data[`${p}modelo`] || data.veiculo_modelo) + ' ' + (data[`${p}marca`] || data.veiculo_marca || '')],
-        ['Cor', data[`${p}cor`] || data.veiculo_cor]
-      ]);
-      addInfoRow([
-        ['Ano', data[`${p}ano`] || data.veiculo_ano],
         ['Placa Desc.', data[`${p}placa_descaract`] || data.veiculo_placa_descaract],
         ['Motor', data[`${p}motor`] || data.veiculo_motor]
       ]);
       addInfoRow([
-        ['Unidade', data.unidade],
-        ['Destino', data.destino],
+        ['Modelo', (data[`${p}modelo`] || data.veiculo_modelo) + ' ' + (data[`${p}marca`] || data.veiculo_marca || '')],
+        ['Cor', data[`${p}cor`] || data.veiculo_cor],
+        ['Ano', data[`${p}ano`] || data.veiculo_ano]
+      ]);
+      addInfoRow([
+        ['Unidade', data.unidade]
+      ]);
+      addInfoRow([
+        ['Destino', data.destino]
+      ]);
+      addInfoRow([
         ['Objetivo', data.objetivo]
       ]);
 
