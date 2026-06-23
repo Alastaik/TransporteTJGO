@@ -129,6 +129,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
 
       // Seção com barra colorida
       const addSection = (title) => {
+        y += 3; // margem superior
         checkPage(12);
         doc.setFillColor(...AZUL);
         doc.rect(M, y, W, 7, 'F');
@@ -137,20 +138,21 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
         doc.setFontSize(9);
         doc.text('  ' + title.toUpperCase(), M + 2, y + 5);
         doc.setTextColor(...PRETO);
-        y += 10;
+        y += 9; // margem inferior reduzida
       };
 
       // Sub-seção cinza
       const addSubSection = (title) => {
+        y += 2;
         checkPage(10);
         doc.setFillColor(...AZUL_CLARO);
-        doc.rect(M, y, W, 6, 'F');
+        doc.rect(M, y, W, 5, 'F');
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...CINZA_HEADER);
-        doc.text(title, M + 2, y + 4);
+        doc.text(title, M + 2, y + 3.5);
         doc.setTextColor(...PRETO);
-        y += 8;
+        y += 7;
       };
 
       // Linha label: valor (em 2 ou 3 colunas)
@@ -160,12 +162,20 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
         doc.setFontSize(8);
         pairs.forEach((pair, i) => {
           const x = M + (i * colW);
+          const labelStr = String(pair[0] || '') + ':';
           doc.setFont('helvetica', 'bold');
-          const labelW = doc.getTextWidth(pair[0] + ': ');
-          doc.text(pair[0] + ':', x, y);
+          doc.text(labelStr, x, y);
+          
+          let labelW = 15;
+          try {
+            labelW = (doc.getStringUnitWidth(labelStr) * doc.internal.getFontSize()) / doc.internal.scaleFactor;
+          } catch(e) {
+            if (typeof doc.getTextWidth === 'function') labelW = doc.getTextWidth(labelStr);
+          }
+          
           doc.setFont('helvetica', 'normal');
           const val = String(pair[1] || 'N/A');
-          doc.text(val, x + labelW + 1, y);
+          doc.text(val, x + labelW + 1.5, y); // 1.5mm de espaço padronizado
         });
         y += 5.5;
       };
@@ -272,7 +282,6 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
         ['Objetivo', data.objetivo]
       ]);
 
-      y += 2;
       addSection('Condutor / Vistoriador');
       addInfoRow([
         ['Condutor', data.motorista_nome],
@@ -282,7 +291,6 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
         ['Vistoriador', data.vistoriador_nome],
         ['Matrícula', data.vistoriador_matricula]
       ]);
-      y += 3;
 
       // ==========================================
       // SAÍDA
@@ -371,7 +379,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
           doc.setTextColor(150, 150, 150);
           doc.text('Vistoria de devolução ainda não realizada.', M + 2, y);
           doc.setTextColor(...PRETO);
-          y += 8;
+          y += 6;
         }
       }
 
