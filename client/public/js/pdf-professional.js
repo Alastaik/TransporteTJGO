@@ -110,7 +110,10 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
       doc.text('DIVISÃO DE TRANSPORTE — CHECKLIST VEICULAR', 105, 19, { align: 'center' });
       doc.setFontSize(9);
       const subtipo = t === 'emprestimo' ? 'VEÍCULO EMPRÉSTIMO' : 'VEÍCULO OFICIAL';
-      doc.text(`Modo: ${modo.toUpperCase()} | ${subtipo}`, 105, 25, { align: 'center' });
+      let labelModo = modo.toUpperCase();
+      if (modo === 'entrada') labelModo = 'RECEBIMENTO';
+      if (modo === 'saida') labelModo = 'ENTREGA';
+      doc.text(`Modo: ${labelModo} | ${subtipo}`, 105, 25, { align: 'center' });
 
       // Linha decorativa
       doc.setFillColor(230, 180, 40);
