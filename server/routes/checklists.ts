@@ -146,7 +146,7 @@ router.get('/export', authMiddleware, async (req: Request, res: Response) => {
 
     // Build CSV
     const rows = dataResult.rows;
-    let csv = 'ID;Status;Tipo;Placa;Modelo;Destino;Motorista;Vistoriador;Data Devolucao;KM Devolucao;Data Entrega;KM Entrega;Criado Em\n';
+    let csv = 'ID;Status;Tipo;Placa;Modelo;Destino;Motorista;Vistoriador;Data Recebimento;KM Recebimento;Data Entrega;KM Entrega;Criado Em\n';
     
     rows.forEach(r => {
       const escape = (val: any) => val ? String(val).replace(/;/g, ',').replace(/\n/g, ' ') : '';

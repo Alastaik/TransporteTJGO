@@ -354,7 +354,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
       // ==========================================
       if (modo === 'entrada' || modo === 'completo') {
         if (data[`${p}entrada_data`]) {
-          addSection('Vistoria de Devolução');
+          addSection('Vistoria de Recebimento');
           addInfoRow([
             ['Data', formatDate(data[`${p}entrada_data`])],
             ['Hora', formatHora(data[`${p}entrada_hora`])],
@@ -373,7 +373,7 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
           } catch (e) {}
 
           if (chkEntrada.length > 0) {
-            addSubSection('Itens Inspecionados — Devolução');
+            addSubSection('Itens Inspecionados — Recebimento');
             addChecklistTable(chkEntrada);
           }
 
@@ -390,11 +390,11 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
           y += 4;
         } else {
           checkPage(10);
-          addSection('Vistoria de Devolução');
+          addSection('Vistoria de Recebimento');
           doc.setFont('helvetica', 'italic');
           doc.setFontSize(8);
           doc.setTextColor(150, 150, 150);
-          doc.text('Vistoria de devolução ainda não realizada.', M + 2, y);
+          doc.text('Vistoria de recebimento ainda não realizada.', M + 2, y);
           doc.setTextColor(...PRETO);
           y += 6;
         }
@@ -540,8 +540,8 @@ window.generateProfessionalPDF = async function(data, modo, tiposFiltro) {
             return isSaida && isAvaria;
           });
 
-        renderFotos('VISTORIA DE DEVOLUÇÃO — GERAL', entradaGerais);
-        renderFotos('VISTORIA DE DEVOLUÇÃO — AVARIAS', entradaAvarias);
+        renderFotos('VISTORIA DE RECEBIMENTO — GERAL', entradaGerais);
+        renderFotos('VISTORIA DE RECEBIMENTO — AVARIAS', entradaAvarias);
         renderFotos('VISTORIA DE ENTREGA — GERAL', saidaGerais);
         renderFotos('VISTORIA DE ENTREGA — AVARIAS', saidaAvarias);
       }

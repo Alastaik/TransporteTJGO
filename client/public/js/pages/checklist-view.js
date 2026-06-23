@@ -99,13 +99,13 @@ const ChecklistViewPage = {
       </div>
     </div>
 
-    <!-- Comparativo Devolução/Entrega -->
-    <div class="card">
-      <h2><span class="material-symbols-rounded section-icon">compare_arrows</span> DEVOLUÇÃO vs ENTREGA</h2>
-      <div class="compare-grid">
+    <!-- Comparativo Recebimento/Entrega -->
+    ${data.status === 'concluido' ? `
+      <h2><span class="material-symbols-rounded section-icon">compare_arrows</span> RECEBIMENTO vs ENTREGA</h2>
+      <div class="compare-container">
         <div class="compare-col">
-          <div class="compare-header compare-entrada">DEVOLUÇÃO</div>
-          <div class="compare-item"><span class="compare-label">Data</span><span>${this.fmtDate(d.entrada_data)}</span></div>
+          <div class="compare-header compare-entrada">RECEBIMENTO</div>
+          <div class="compare-content"><span class="compare-label">Data</span><span>${this.fmtDate(d.entrada_data)}</span></div>
           <div class="compare-item"><span class="compare-label">Hora</span><span>${this.fmtHora(d.entrada_hora)}</span></div>
           <div class="compare-item"><span class="compare-label">KM</span><span>${this.fmtKm(d.entrada_km)}</span></div>
           <div class="compare-item"><span class="compare-label">Combustível</span><span>${d.entrada_combustivel || '—'}</span></div>
@@ -138,7 +138,7 @@ const ChecklistViewPage = {
         <span class="material-symbols-rounded">edit</span> RETOMAR / COMPLETAR ENTREGA
       </button>` : `
       <button class="btn btn-primary btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, edit: 'entrada'})">
-        <span class="material-symbols-rounded">edit</span> EDITAR DEVOLUÇÃO
+        <span class="material-symbols-rounded">edit</span> EDITAR RECEBIMENTO
       </button>
       <button class="btn btn-primary btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, edit: 'saida'})">
         <span class="material-symbols-rounded">edit</span> EDITAR ENTREGA

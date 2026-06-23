@@ -28,13 +28,13 @@ const ChecklistFormPage = {
     
     const badge = document.getElementById('faseBadge');
     if (badge) {
-      badge.textContent = novaFase === 'saida' ? 'ENTREGA' : 'DEVOLUÇÃO';
-      badge.className = 'badge ' + (novaFase === 'saida' ? 'badge-green' : 'badge-blue');
+      badge.textContent = novaFase === 'saida' ? 'ENTREGA' : 'RECEBIMENTO';
+      badge.className = 'badge ' + (novaFase === 'saida' ? 'badge-green' : 'badge-primary');
     }
     
     const titulo = document.getElementById('tituloChecklist');
     if (titulo) {
-      titulo.textContent = 'CHECKLIST VEICULAR — ' + (novaFase === 'saida' ? 'ENTREGA' : 'DEVOLUÇÃO');
+      titulo.textContent = 'CHECKLIST VEICULAR — ' + (novaFase === 'saida' ? 'ENTREGA' : 'RECEBIMENTO');
     }
 
     const btnEntrada = document.getElementById('btnEntradaFase');
@@ -55,9 +55,10 @@ const ChecklistFormPage = {
         const saveAreaContent = document.getElementById('saveAreaContent');
         if (saveAreaContent) {
           saveAreaContent.innerHTML = `
+              <div class="form-actions sticky-actions">
               <button type="button" id="btnSalvarEntrada" class="btn btn-primary btn-lg" onclick="ChecklistFormPage.salvarEntrada()">
                 <span class="material-symbols-rounded">save</span>
-                SALVAR DEVOLUÇÃO (Em Andamento)
+                SALVAR RECEBIMENTO (Em Andamento)
               </button>
               <button type="button" id="btnSalvarUnico" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarUnico()" style="display: none;">
                 <span class="material-symbols-rounded">check_circle</span>
@@ -101,8 +102,9 @@ const ChecklistFormPage = {
     };
 
     const user = Auth.getUser();
-    const faseLabel = this.fase === 'saida' ? 'ENTREGA' : 'DEVOLUÇÃO';
-    const faseColor = this.fase === 'saida' ? 'badge-green' : 'badge-blue';
+    const faseLabel = this.fase === 'saida' ? 'ENTREGA' : 'RECEBIMENTO';
+    const btnColor = this.fase === 'saida' ? 'btn-green' : 'btn-primary';
+    const badgeColor = this.fase === 'saida' ? 'badge-green' : 'badge-primary';
 
     return `
     <div class="app-layout">
@@ -116,7 +118,7 @@ const ChecklistFormPage = {
               <span class="material-symbols-rounded">arrow_back</span> Voltar
             </button>
             <div>
-              <span class="badge ${faseColor}" id="faseBadge">${faseLabel}</span>
+              <span class="badge ${badgeColor}" id="faseBadge">${faseLabel}</span>
               ${this.modo === 'troca' ? '<span class="badge badge-green">Troca/Empréstimo</span>' : ''}
             </div>
           </div>
@@ -136,9 +138,9 @@ const ChecklistFormPage = {
           ${!this.checklistId ? `
           <div class="card card-info" style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
             <div><strong>Fase Inicial:</strong> Escolha qual momento está registrando agora.</div>
-            <div style="display:flex; gap: 10px; margin-top: 10px;">
+            <div class="split-actions">
               <button id="btnEntradaFase" class="btn ${this.fase === 'entrada' ? 'btn-primary' : 'btn-outline'}" onclick="ChecklistFormPage.setFaseInicial('entrada')">
-                <span class="material-symbols-rounded">login</span> COMEÇAR PELA DEVOLUÇÃO
+                <span class="material-symbols-rounded">login</span> COMEÇAR PELO RECEBIMENTO
               </button>
               <button id="btnSaidaFase" class="btn ${this.fase === 'saida' ? 'btn-primary' : 'btn-outline'}" onclick="ChecklistFormPage.setFaseInicial('saida')">
                 <span class="material-symbols-rounded">logout</span> COMEÇAR PELA ENTREGA
@@ -214,19 +216,20 @@ const ChecklistFormPage = {
             <div id="saveAreaContent" class="save-area-content">
               ${this.fase === 'entrada' ? `
               <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 20px; text-align: left;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-main); font-size: 15px;">
-                  <input type="checkbox" id="checkEntradaSaida" style="width: 20px; height: 20px;" onchange="ChecklistFormPage.toggleChecklistUnico(this.checked)">
-                  <strong>Registrar Devolução e Entrega (Checklist Único)</strong>
+                <label for="checkEntradaSaida" style="cursor: pointer; display: flex; flex-direction: column; gap: 4px;">
+                  <div style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="checkEntradaSaida" style="width: 20px; height: 20px;" onchange="ChecklistFormPage.toggleChecklistUnico(this.checked)">
+                    <strong>Registrar Recebimento e Entrega (Checklist Único)</strong>
+                  </div>
+                  <span style="font-size: 12px; color: var(--cinza-400);">
+                    Atenção: Ao marcar esta opção, o checklist será concluído imediatamente. Os dados preenchidos serão salvos tanto para o Recebimento quanto para a Entrega.
+                  </span>
                 </label>
-                <div id="avisoChecklistUnico" style="display: none; margin-top: 10px; font-size: 13px; color: var(--amarelo);">
-                  <span class="material-symbols-rounded" style="font-size: 16px; vertical-align: middle;">warning</span>
-                  Atenção: Ao marcar esta opção, o checklist será concluído imediatamente. Os dados preenchidos serão salvos tanto para a Devolução quanto para a Entrega.
-                </div>
               </div>
 
               <button type="button" id="btnSalvarEntrada" class="btn btn-primary btn-lg" onclick="ChecklistFormPage.salvarEntrada()">
                 <span class="material-symbols-rounded">save</span>
-                ${this.isEdit ? 'SALVAR ALTERAÇÕES (DEVOLUÇÃO)' : 'SALVAR DEVOLUÇÃO (Em Andamento)'}
+                ${this.isEdit ? 'SALVAR ALTERAÇÕES (RECEBIMENTO)' : 'SALVAR RECEBIMENTO (Em Andamento)'}
               </button>
               ${!this.isEdit ? `
               <button type="button" id="btnSalvarUnico" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarUnico()" style="display: none;">
@@ -746,11 +749,11 @@ const ChecklistFormPage = {
     const resumo = document.createElement('div');
     resumo.className = 'card card-info';
     resumo.innerHTML = `
-      <h2><span class="material-symbols-rounded section-icon">info</span> DADOS DA DEVOLUÇÃO (referência)</h2>
-      <div class="grid">
-        <div class="info-item"><span class="info-label">Data Devolução</span><span class="info-value">${data.entrada_data || '—'}</span></div>
+      <h2><span class="material-symbols-rounded section-icon">info</span> DADOS DO RECEBIMENTO (referência)</h2>
+      <div class="info-grid">
+        <div class="info-item"><span class="info-label">Data Recebimento</span><span class="info-value">${data.entrada_data || '—'}</span></div>
         <div class="info-item"><span class="info-label">Hora</span><span class="info-value">${data.entrada_hora || '—'}</span></div>
-        <div class="info-item"><span class="info-label">KM Devolução</span><span class="info-value">${data.entrada_km || '—'}</span></div>
+        <div class="info-item"><span class="info-label">KM Recebimento</span><span class="info-value">${data.entrada_km || '—'}</span></div>
         <div class="info-item"><span class="info-label">Combustível</span><span class="info-value">${data.entrada_combustivel || '—'}</span></div>
       </div>`;
     formOficial.insertBefore(resumo, formOficial.firstChild);
