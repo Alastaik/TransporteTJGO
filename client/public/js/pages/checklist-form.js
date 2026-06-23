@@ -56,14 +56,15 @@ const ChecklistFormPage = {
         if (saveAreaContent) {
           saveAreaContent.innerHTML = `
               <div class="form-actions sticky-actions">
-              <button type="button" id="btnSalvarEntrada" class="btn btn-primary btn-lg" onclick="ChecklistFormPage.salvarEntrada()">
-                <span class="material-symbols-rounded">save</span>
-                SALVAR RECEBIMENTO (Em Andamento)
-              </button>
-              <button type="button" id="btnSalvarUnico" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarUnico()" style="display: none;">
-                <span class="material-symbols-rounded">check_circle</span>
-                CONCLUIR CHECKLIST ÚNICO
-              </button>
+                <button type="button" id="btnSalvarEntrada" class="btn btn-primary btn-lg" onclick="ChecklistFormPage.salvarEntrada()">
+                  <span class="material-symbols-rounded">save</span>
+                  SALVAR RECEBIMENTO (Em Andamento)
+                </button>
+                <button type="button" id="btnSalvarUnico" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarUnico()" style="display: none;">
+                  <span class="material-symbols-rounded">check_circle</span>
+                  CONCLUIR CHECKLIST ÚNICO
+                </button>
+              </div>
           `;
         }
         // Trigger checkbox check

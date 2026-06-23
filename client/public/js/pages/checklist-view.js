@@ -100,12 +100,12 @@ const ChecklistViewPage = {
     </div>
 
     <!-- Comparativo Recebimento/Entrega -->
-    ${data.status === 'concluido' ? `
+    <div class="card">
       <h2><span class="material-symbols-rounded section-icon">compare_arrows</span> RECEBIMENTO vs ENTREGA</h2>
-      <div class="compare-container">
+      <div class="compare-grid">
         <div class="compare-col">
           <div class="compare-header compare-entrada">RECEBIMENTO</div>
-          <div class="compare-content"><span class="compare-label">Data</span><span>${this.fmtDate(d.entrada_data)}</span></div>
+          <div class="compare-item"><span class="compare-label">Data</span><span>${this.fmtDate(d.entrada_data)}</span></div>
           <div class="compare-item"><span class="compare-label">Hora</span><span>${this.fmtHora(d.entrada_hora)}</span></div>
           <div class="compare-item"><span class="compare-label">KM</span><span>${this.fmtKm(d.entrada_km)}</span></div>
           <div class="compare-item"><span class="compare-label">Combustível</span><span>${d.entrada_combustivel || '—'}</span></div>
