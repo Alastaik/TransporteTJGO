@@ -133,16 +133,18 @@ const ChecklistViewPage = {
 
     <!-- Actions -->
     <div class="save-area">
-      ${d.status === 'em_andamento' ? `
-      <button class="btn btn-primary btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, retomar: true})">
-        <span class="material-symbols-rounded">edit</span> RETOMAR / COMPLETAR ENTREGA
-      </button>` : `
-      <button class="btn btn-primary btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, edit: 'entrada'})">
-        <span class="material-symbols-rounded">edit</span> EDITAR RECEBIMENTO
-      </button>
-      <button class="btn btn-primary btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, edit: 'saida'})">
-        <span class="material-symbols-rounded">edit</span> EDITAR ENTREGA
-      </button>`}
+      <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+        <button class="btn btn-outline btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, edit: 'entrada'})">
+          <span class="material-symbols-rounded">edit</span> EDITAR RECEBIMENTO
+        </button>
+        ${d.status === 'em_andamento' ? `
+        <button class="btn btn-primary btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, retomar: true})">
+          <span class="material-symbols-rounded">edit</span> ${d.saida_data ? 'RETOMAR / EDITAR ENTREGA' : 'PREENCHER ENTREGA'}
+        </button>` : `
+        <button class="btn btn-primary btn-lg" onclick="App.navigate('checklist', {id: ${d.id}, edit: 'saida'})">
+          <span class="material-symbols-rounded">edit</span> EDITAR ENTREGA
+        </button>`}
+      </div>
       <div class="view-actions">
       <button class="btn btn-primary btn-lg" onclick="ChecklistViewPage.downloadPDF(${d.id})">
         <span class="material-symbols-rounded">picture_as_pdf</span> BAIXAR PDF

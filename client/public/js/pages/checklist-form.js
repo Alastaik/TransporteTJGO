@@ -214,7 +214,7 @@ const ChecklistFormPage = {
               <span>Ações do Checklist</span>
             </div>
             
-            <div id="saveAreaContent" class="save-area-content">
+              <div id="saveAreaContent" class="save-area-content">
               ${this.fase === 'entrada' ? `
               <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); padding: 15px; border-radius: var(--radius-sm); margin-bottom: 20px; text-align: left;">
                 <label for="checkEntradaSaida" style="cursor: pointer; display: flex; flex-direction: column; gap: 4px;">
@@ -228,10 +228,19 @@ const ChecklistFormPage = {
                 </label>
               </div>
 
-              <button type="button" id="btnSalvarEntrada" class="btn btn-primary btn-lg" onclick="ChecklistFormPage.salvarEntrada()">
-                <span class="material-symbols-rounded">save</span>
-                ${this.isEdit ? 'SALVAR ALTERAÇÕES (RECEBIMENTO)' : 'SALVAR RECEBIMENTO (Em Andamento)'}
-              </button>
+              <div id="acoesEntradaContainer" style="display: flex; flex-direction: column; gap: 10px;">
+                <button type="button" id="btnSalvarEntrada" class="btn btn-primary btn-lg" onclick="ChecklistFormPage.salvarEntrada(false)">
+                  <span class="material-symbols-rounded">save</span>
+                  ${this.isEdit ? 'SALVAR ALTERAÇÕES (RECEBIMENTO)' : 'SALVAR RECEBIMENTO (Em Andamento)'}
+                </button>
+                ${(this.existingData && this.existingData.saida_data) ? `
+                <button type="button" id="btnFinalizarEntrada" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarEntrada(true)">
+                  <span class="material-symbols-rounded">check_circle</span>
+                  FINALIZAR CHECKLIST
+                </button>
+                ` : ''}
+              </div>
+
               ${!this.isEdit ? `
               <button type="button" id="btnSalvarUnico" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarUnico()" style="display: none;">
                 <span class="material-symbols-rounded">check_circle</span>
@@ -239,10 +248,16 @@ const ChecklistFormPage = {
               </button>
               ` : ''}
               ` : `
-              <button type="button" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarSaida()">
-                <span class="material-symbols-rounded">check_circle</span>
-                ${this.isEdit ? 'SALVAR ALTERAÇÕES (ENTREGA)' : (this.checklistId ? 'CONCLUIR ENTREGA' : 'SALVAR ENTREGA (Em Andamento)')}
-              </button>
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button type="button" class="btn btn-outline btn-lg" style="border-color: var(--verde); color: var(--verde);" onclick="ChecklistFormPage.salvarSaida(false)">
+                  <span class="material-symbols-rounded">save</span>
+                  ${this.isEdit ? 'SALVAR ALTERAÇÕES (ENTREGA)' : 'SALVAR ENTREGA (Rascunho)'}
+                </button>
+                <button type="button" class="btn btn-green btn-lg" onclick="ChecklistFormPage.salvarSaida(true)">
+                  <span class="material-symbols-rounded">check_circle</span>
+                  FINALIZAR CHECKLIST
+                </button>
+              </div>
               `}
               
               <button type="button" class="btn btn-outline btn-lg" onclick="ChecklistFormPage.gerarPDF('oficial')">
@@ -415,12 +430,12 @@ const ChecklistFormPage = {
     // Build dynamic content
     this.buildChecklistTable('');
     this.buildPhotoGrid('geral-oficial', this.FOTOS_GERAIS, 'oficial');
-    this.buildPhotoGrid('avarias-oficial', 10, 'oficial');
+    this.buildPhotoGrid('avarias-oficial', 3, 'oficial');
 
     if (this.modo === 'troca') {
       this.buildChecklistTable('_emp');
       this.buildPhotoGrid('geral-emprestimo', this.FOTOS_GERAIS, 'emprestimo');
-      this.buildPhotoGrid('avarias-emprestimo', 10, 'emprestimo');
+      this.buildPhotoGrid('avarias-emprestimo', 3, 'emprestimo');
     }
 
     // Placa search
@@ -1311,18 +1326,16 @@ const ChecklistFormPage = {
   },
 
   // SAVE ENTRADA
-  async salvarEntrada() {
+  async salvarEntrada(concluir = false) {
     const placa = this.getVal('placaVeiculo');
     if (!placa) { App.toast('Preencha a placa do veículo', 'warning'); return; }
 
     App.showLoading('Salvando...');
 
     let novoStatus = 'em_andamento';
-    const hasSaidaData = (this.existingData && this.existingData.saida_data) ? true : false;
-    const hasEntradaData = this.getVal('movimentacaoData') ? true : false;
     if (this.existingData && this.existingData.status === 'concluido') {
       novoStatus = 'concluido';
-    } else if (hasSaidaData && hasEntradaData) {
+    } else if (concluir) {
       novoStatus = 'concluido';
     }
 
@@ -1414,18 +1427,16 @@ const ChecklistFormPage = {
   },
 
   // SAVE SAÍDA (conclude)
-  async salvarSaida() {
+  async salvarSaida(concluir = false) {
     const placa = this.getVal('placaVeiculo');
     if (!placa && !this.checklistId) { App.toast('Preencha a placa do veículo', 'warning'); return; }
 
     App.showLoading('Salvando...');
 
     let novoStatus = 'em_andamento';
-    const hasEntradaData = (this.existingData && this.existingData.entrada_data) ? true : false;
-    const hasSaidaData = this.getVal('movimentacaoData') ? true : false;
     if (this.existingData && this.existingData.status === 'concluido') {
       novoStatus = 'concluido';
-    } else if (hasEntradaData && hasSaidaData) {
+    } else if (concluir) {
       novoStatus = 'concluido';
     }
 
