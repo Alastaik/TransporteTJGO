@@ -1399,7 +1399,7 @@ const ChecklistFormPage = {
         // Save photos
         const fotos = Object.values(this.fotosCaptured);
         if (fotos.length > 0) {
-          await API.post(`/checklists/${result.id}/fotos`, { fotos });
+          await API.post(`/checklists/${result.id}/fotos?fase=${this.fase}`, { fotos });
         }
 
         App.hideLoading();

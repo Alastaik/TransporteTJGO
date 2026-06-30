@@ -181,58 +181,27 @@ const ChecklistViewPage = {
 
   async loadFotos(id) {
     try {
-      const res = await API.get(`/fotos/checklist/${id}`);
       const gallery = document.getElementById('fotosGallery');
       if (!gallery) return;
 
-      if (!res || res.length === 0) {
+      const res = this.data.fotos || [];
+      if (res.length === 0) {
         gallery.innerHTML = '<p style="color:var(--text-muted);font-size:13px;width:100%;">Nenhuma foto anexada.</p>';
         return;
       }
 
       gallery.innerHTML = res.map(f => `
-        <div style="position:relative; width:120px; height:120px; border-radius:8px; overflow:hidden; border:1px solid var(--border-color);">
-          <img src="/api/v1/fotos/download/${f.id}" style="width:100%; height:100%; object-fit:cover;" onclick="window.open('/api/v1/fotos/download/${f.id}', '_blank')">
-          <button onclick="ChecklistViewPage.deleteFoto(${f.id}, ${id})" style="position:absolute; top:4px; right:4px; background:rgba(255,0,0,0.8); color:#fff; border:none; border-radius:4px; cursor:pointer; width:24px; height:24px; display:flex; align-items:center; justify-content:center;">
-            <span class="material-symbols-rounded" style="font-size:16px;">delete</span>
-          </button>
+        <div style="position:relative; width:120px; border-radius:8px; overflow:hidden; border:1px solid var(--border-color); display:flex; flex-direction:column; background:var(--bg-input);">
+          <div style="font-size:11px; padding:4px; text-align:center; font-weight:bold; color:var(--text-primary); border-bottom:1px solid var(--border-color); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${f.label}">
+            ${f.label}<br/><span style="opacity:0.6; font-size:9px;">${f.categoria.replace(/_(oficial|emprestimo)$/, '')}</span>
+          </div>
+          <img src="${f.dados}" style="width:100%; height:100px; object-fit:cover; cursor:pointer;" onclick="window.open('${f.dados}', '_blank')">
         </div>
       `).join('');
     } catch (err) {
       console.error(err);
       const gallery = document.getElementById('fotosGallery');
       if (gallery) gallery.innerHTML = '<p style="color:var(--vermelho);font-size:13px;">Erro ao carregar fotos.</p>';
-    }
-  },
-
-  async uploadFoto(checklistId, input) {
-    if (!input.files || input.files.length === 0) return;
-    const file = input.files[0];
-    try {
-      App.showLoading('Enviando foto...');
-      await API.uploadFoto(file, checklistId);
-      App.hideLoading();
-      App.toast('Foto enviada com sucesso', 'success');
-      this.loadFotos(checklistId);
-    } catch (err) {
-      App.hideLoading();
-      App.toast('Erro ao enviar foto: ' + err.message, 'error');
-    } finally {
-      input.value = '';
-    }
-  },
-
-  async deleteFoto(fotoId, checklistId) {
-    if (!confirm('Tem certeza que deseja excluir esta foto?')) return;
-    try {
-      App.showLoading('Excluindo...');
-      await API.delete(`/fotos/${fotoId}`);
-      App.hideLoading();
-      App.toast('Foto excluída', 'success');
-      this.loadFotos(checklistId);
-    } catch (err) {
-      App.hideLoading();
-      App.toast('Erro ao excluir: ' + err.message, 'error');
     }
   },
 
@@ -289,12 +258,12 @@ const ChecklistViewPage = {
       const timeline = document.getElementById('auditTimeline');
       if (!timeline) return;
 
-      if (!res.data || res.data.length === 0) {
+      if (!res || res.length === 0) {
         timeline.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">Nenhum histórico registrado.</p>';
         return;
       }
 
-      timeline.innerHTML = res.data.map((item, idx) => {
+      timeline.innerHTML = res.map((item, idx) => {
         const date = new Date(item.criado_em);
         let icon = 'edit';
         if (item.acao === 'criou') icon = 'add_circle';
@@ -303,7 +272,7 @@ const ChecklistViewPage = {
 
         return `
           <div style="display:flex; gap:15px; margin-bottom:15px; position:relative;">
-            ${idx < res.data.length - 1 ? '<div style="position:absolute; left:11px; top:25px; bottom:-15px; width:2px; background:var(--border-color);"></div>' : ''}
+            ${idx < res.length - 1 ? '<div style="position:absolute; left:11px; top:25px; bottom:-15px; width:2px; background:var(--border-color);"></div>' : ''}
             <div style="width:24px; height:24px; border-radius:50%; background:var(--bg-input); border:2px solid var(--azul-primary); display:flex; align-items:center; justify-content:center; z-index:1;">
               <span class="material-symbols-rounded" style="font-size:14px; color:var(--azul-primary);">${icon}</span>
             </div>
