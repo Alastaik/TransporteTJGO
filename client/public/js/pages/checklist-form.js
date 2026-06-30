@@ -395,6 +395,7 @@ const ChecklistFormPage = {
     <div class="card ${isEmp ? 'emprestimo-card' : ''}" data-step="3">
       <h2 class="${isEmp ? 'emprestimo-title' : ''}"><span class="material-symbols-rounded section-icon">photo_camera</span> FOTOS — ${titulo}</h2>
       <div class="photos" id="${containerId}"></div>
+      ${isAvarias ? `<button type="button" class="btn btn-outline mt-10" onclick="ChecklistFormPage.adicionarCaixaAvaria('${containerId}', '${formId}')" style="width: 100%; border-style: dashed;"><span class="material-symbols-rounded">add_circle</span> Adicionar mais uma Avaria</button>` : ''}
     </div>`;
   },
 
@@ -700,29 +701,41 @@ const ChecklistFormPage = {
           if (!container) return;
 
           const boxes = container.querySelectorAll('.photo-box');
+          let targetBox = null;
           boxes.forEach(box => {
             const label = box.querySelector('b');
             if (label && label.textContent === foto.label) {
-              const img = box.querySelector('img');
-              if (img && foto.dados) {
-                img.src = foto.dados;
-                img.style.display = 'block';
-
-                const fotoId = box.getAttribute('data-foto-id');
-                const targetContainerId = box.getAttribute('data-container-id');
-                
-                // Add to captured so it gets saved correctly!
-                const catDb = (this.fase || 'entrada') + '_' + targetContainerId;
-                this.fotosCaptured[fotoId] = { categoria: catDb, label: foto.label, dados: foto.dados };
-
-                // Adjust UI: Hide camera/gallery, show Remove
-                const actions = box.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
-                actions.forEach(a => a.style.display = 'none');
-                const removeBtn = box.querySelector('.photo-remove-btn');
-                if (removeBtn) removeBtn.style.display = 'flex';
-              }
+              targetBox = box;
             }
           });
+
+          if (!targetBox && cat.startsWith('avarias-')) {
+            const formId = cat.includes('emprestimo') ? 'emprestimo' : 'oficial';
+            const indexStr = foto.label.replace('Avaria ', '');
+            const index = (parseInt(indexStr) || boxes.length + 1) - 1;
+            targetBox = this.criarCaixaFoto(cat, formId, 'avaria', foto.label, index);
+          }
+
+          if (targetBox) {
+            const img = targetBox.querySelector('img');
+            if (img && foto.dados) {
+              img.src = foto.dados;
+              img.style.display = 'block';
+
+              const fotoId = targetBox.getAttribute('data-foto-id');
+              const targetContainerId = targetBox.getAttribute('data-container-id');
+              
+              // Add to captured so it gets saved correctly!
+              const catDb = (this.fase || 'entrada') + '_' + targetContainerId;
+              this.fotosCaptured[fotoId] = { categoria: catDb, label: foto.label, dados: foto.dados };
+
+              // Adjust UI: Hide camera/gallery, show Remove
+              const actions = targetBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
+              actions.forEach(a => a.style.display = 'none');
+              const removeBtn = targetBox.querySelector('.photo-remove-btn');
+              if (removeBtn) removeBtn.style.display = 'flex';
+            }
+          }
         });
       }
 
@@ -826,7 +839,6 @@ const ChecklistFormPage = {
     tbody.appendChild(trOutro);
   },
 
-  // Build photo grid
   buildPhotoGrid(containerId, labelsOrCount, formId) {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -837,92 +849,107 @@ const ChecklistFormPage = {
 
     for (let i = 0; i < count; i++) {
       const label = isAvarias ? `Avaria ${i + 1}` : labelsOrCount[i];
-      const fotoId = `foto-${prefix}-${formId}-${i}`;
-      const div = document.createElement('div');
-      div.className = 'photo-box';
-      div.setAttribute('data-foto-id', fotoId);
-      div.setAttribute('data-container-id', containerId);
-      div.setAttribute('data-label', label);
+      this.criarCaixaFoto(containerId, formId, prefix, label, i);
+    }
+  },
 
-      div.innerHTML = `
-        <b>${label}</b>
-        <div class="photo-actions">
-          <label class="btn btn-sm btn-outline photo-action-btn">
-            <span class="material-symbols-rounded" style="font-size:16px!important;">photo_camera</span> Câmera
-            <input type="file" accept="image/*" capture="environment" style="display:none;" data-foto-id="${fotoId}" data-container-id="${containerId}" data-label="${label}">
-          </label>
-          <label class="btn btn-sm btn-outline photo-action-btn">
-            <span class="material-symbols-rounded" style="font-size:16px!important;">photo_library</span> Galeria
-            <input type="file" accept="image/*" style="display:none;" data-foto-id="${fotoId}" data-container-id="${containerId}" data-label="${label}">
-          </label>
-          <button type="button" class="btn btn-sm btn-outline photo-action-btn photo-remove-btn" style="display:none; color: var(--red); border-color: var(--red);" onclick="ChecklistFormPage.removeFoto('${fotoId}')">
-            <span class="material-symbols-rounded" style="font-size:16px!important;">delete</span> Remover
-          </button>
-        </div>
-        <img alt="${label}">`;
+  adicionarCaixaAvaria(containerId, formId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const boxes = container.querySelectorAll('.photo-box');
+    const index = boxes.length;
+    const label = `Avaria ${index + 1}`;
+    return this.criarCaixaFoto(containerId, formId, 'avaria', label, index);
+  },
 
-      // Attach listeners to both inputs
-      div.querySelectorAll('input[type="file"]').forEach(input => {
-        // CLICK: fires BEFORE the camera/gallery opens — save state synchronously
-        input.addEventListener('click', function() {
-          ChecklistFormPage.saveFormStateToSession();
-        });
+  criarCaixaFoto(containerId, formId, prefix, label, index) {
+    const container = document.getElementById(containerId);
+    const fotoId = `foto-${prefix}-${formId}-${index}`;
+    const div = document.createElement('div');
+    div.className = 'photo-box';
+    div.setAttribute('data-foto-id', fotoId);
+    div.setAttribute('data-container-id', containerId);
+    div.setAttribute('data-label', label);
 
-        // CHANGE: fires AFTER the user took the photo or picked from gallery
-        input.addEventListener('change', async function() {
-          if (!this.files || !this.files[0]) return;
+    div.innerHTML = `
+      <b>${label}</b>
+      <div class="photo-actions">
+        <label class="btn btn-sm btn-outline photo-action-btn">
+          <span class="material-symbols-rounded" style="font-size:16px!important;">photo_camera</span> Câmera
+          <input type="file" accept="image/*" capture="environment" style="display:none;" data-foto-id="${fotoId}" data-container-id="${containerId}" data-label="${label}">
+        </label>
+        <label class="btn btn-sm btn-outline photo-action-btn">
+          <span class="material-symbols-rounded" style="font-size:16px!important;">photo_library</span> Galeria
+          <input type="file" accept="image/*" style="display:none;" data-foto-id="${fotoId}" data-container-id="${containerId}" data-label="${label}">
+        </label>
+        <button type="button" class="btn btn-sm btn-outline photo-action-btn photo-remove-btn" style="display:none; color: var(--red); border-color: var(--red);" onclick="ChecklistFormPage.removeFoto('${fotoId}')">
+          <span class="material-symbols-rounded" style="font-size:16px!important;">delete</span> Remover
+        </button>
+      </div>
+      <img alt="${label}">`;
 
-          const targetFotoId = this.getAttribute('data-foto-id');
-          const targetContainerId = this.getAttribute('data-container-id');
-          const targetLabel = this.getAttribute('data-label');
-
-          // Show loading indicator
-          const photoBox = document.querySelector(`[data-foto-id="${targetFotoId}"]`);
-          let removeBtn = null;
-          if (photoBox) {
-            const actions = photoBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
-            actions.forEach(a => a.style.display = 'none');
-            removeBtn = photoBox.querySelector('.photo-remove-btn');
-            if (removeBtn) removeBtn.style.display = 'none';
-          }
-
-          App.showLoading('Processando imagem...');
-
-          try {
-            const compressed = await ChecklistFormPage.compressImageSafe(this.files[0]);
-
-            // Update the photo box
-            if (photoBox) {
-              const img = photoBox.querySelector('img');
-              if (img) {
-                img.src = compressed;
-                img.style.display = 'block';
-              }
-              // Restore the buttons, but hide camera/gallery and show Remove
-              const actions = photoBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
-              actions.forEach(a => a.style.display = 'none');
-              if (removeBtn) removeBtn.style.display = 'flex';
-            }
-          const catDb = (ChecklistFormPage.fase || 'entrada') + '_' + targetContainerId;
-            ChecklistFormPage.fotosCaptured[targetFotoId] = { categoria: catDb, label: targetLabel, dados: compressed };
-            ChecklistFormPage.isDirty = true;
-          } catch (e) {
-            console.error('Erro ao processar imagem:', e);
-            App.toast('Erro ao processar imagem. Tente outra.', 'error');
-            // Restore the camera/gallery buttons
-            if (photoBox) {
-              const actions = photoBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
-              actions.forEach(a => a.style.display = 'flex');
-            }
-          } finally {
-            App.hideLoading();
-            this.value = ''; // Reset input
-          }
-        });
+    // Attach listeners to both inputs
+    div.querySelectorAll('input[type="file"]').forEach(input => {
+      // CLICK: fires BEFORE the camera/gallery opens — save state synchronously
+      input.addEventListener('click', function() {
+        ChecklistFormPage.saveFormStateToSession();
       });
 
-      container.appendChild(div);
-    }
+      // CHANGE: fires AFTER the user took the photo or picked from gallery
+      input.addEventListener('change', async function() {
+        if (!this.files || !this.files[0]) return;
+
+        const targetFotoId = this.getAttribute('data-foto-id');
+        const targetContainerId = this.getAttribute('data-container-id');
+        const targetLabel = this.getAttribute('data-label');
+
+        // Show loading indicator
+        const photoBox = document.querySelector(`[data-foto-id="${targetFotoId}"]`);
+        let removeBtn = null;
+        if (photoBox) {
+          const actions = photoBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
+          actions.forEach(a => a.style.display = 'none');
+          removeBtn = photoBox.querySelector('.photo-remove-btn');
+          if (removeBtn) removeBtn.style.display = 'none';
+        }
+
+        App.showLoading('Processando imagem...');
+
+        try {
+          const compressed = await ChecklistFormPage.compressImageSafe(this.files[0]);
+
+          // Update the photo box
+          if (photoBox) {
+            const img = photoBox.querySelector('img');
+            if (img) {
+              img.src = compressed;
+              img.style.display = 'block';
+            }
+            // Restore the buttons, but hide camera/gallery and show Remove
+            const actions = photoBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
+            actions.forEach(a => a.style.display = 'none');
+            if (removeBtn) removeBtn.style.display = 'flex';
+          }
+          const catDb = (ChecklistFormPage.fase || 'entrada') + '_' + targetContainerId;
+          ChecklistFormPage.fotosCaptured[targetFotoId] = { categoria: catDb, label: targetLabel, dados: compressed };
+          ChecklistFormPage.isDirty = true;
+        } catch (e) {
+          console.error('Erro ao processar imagem:', e);
+          App.toast('Erro ao processar imagem. Tente outra.', 'error');
+          // Restore the camera/gallery buttons
+          if (photoBox) {
+            const actions = photoBox.querySelectorAll('.photo-action-btn:not(.photo-remove-btn)');
+            actions.forEach(a => a.style.display = 'flex');
+          }
+        } finally {
+          App.hideLoading();
+          this.value = ''; // Reset input
+        }
+      });
+    });
+
+    container.appendChild(div);
+    return div;
   },
 
   removeFoto(fotoId) {
@@ -1290,8 +1317,17 @@ const ChecklistFormPage = {
 
     App.showLoading('Salvando...');
 
+    let novoStatus = 'em_andamento';
+    const hasSaidaData = (this.existingData && this.existingData.saida_data) ? true : false;
+    const hasEntradaData = this.getVal('movimentacaoData') ? true : false;
+    if (this.existingData && this.existingData.status === 'concluido') {
+      novoStatus = 'concluido';
+    } else if (hasSaidaData && hasEntradaData) {
+      novoStatus = 'concluido';
+    }
+
     const data = {
-      status: (this.existingData && this.existingData.status === 'concluido') || this.isRetomar ? 'concluido' : 'em_andamento',
+      status: novoStatus,
       tipo: this.modo,
       veiculo_placa: placa,
       veiculo_modelo: this.getVal('veiculoNome'),
@@ -1384,8 +1420,17 @@ const ChecklistFormPage = {
 
     App.showLoading('Salvando...');
 
+    let novoStatus = 'em_andamento';
+    const hasEntradaData = (this.existingData && this.existingData.entrada_data) ? true : false;
+    const hasSaidaData = this.getVal('movimentacaoData') ? true : false;
+    if (this.existingData && this.existingData.status === 'concluido') {
+      novoStatus = 'concluido';
+    } else if (hasEntradaData && hasSaidaData) {
+      novoStatus = 'concluido';
+    }
+
     const data = {
-      status: (this.existingData && this.existingData.status === 'concluido') ? 'concluido' : (this.checklistId ? 'concluido' : 'em_andamento'),
+      status: novoStatus,
       tipo: this.modo,
       saida_data: this.getVal('movimentacaoData') || null,
       saida_hora: this.getVal('movimentacaoHora') || null,
