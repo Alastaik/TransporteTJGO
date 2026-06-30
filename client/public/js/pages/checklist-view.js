@@ -164,10 +164,6 @@ const ChecklistViewPage = {
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
         <h2 style="margin:0;"><span class="material-symbols-rounded section-icon">photo_library</span> GALERIA DE FOTOS</h2>
-        <label class="btn btn-sm btn-primary" style="cursor:pointer;">
-          <span class="material-symbols-rounded">add_a_photo</span> Adicionar
-          <input type="file" accept="image/*" style="display:none" onchange="ChecklistViewPage.uploadFoto(${d.id}, this)">
-        </label>
       </div>
       <div id="fotosGallery" style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
         <div class="loading-inline"><div class="loading-spinner"></div><span>Carregando fotos...</span></div>
