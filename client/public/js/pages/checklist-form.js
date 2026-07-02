@@ -136,19 +136,17 @@ const ChecklistFormPage = {
             <div class="check-title" id="tituloChecklist">CHECKLIST VEICULAR — ${faseLabel}</div>
           </div>
 
-          ${!this.checklistId ? `
           <div class="card card-info" style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
-            <div><strong>Fase Inicial:</strong> Escolha qual momento está registrando agora.</div>
+            <div><strong>Fase Atual:</strong> Escolha qual momento está registrando agora.</div>
             <div class="split-actions">
               <button id="btnEntradaFase" class="btn ${this.fase === 'entrada' ? 'btn-primary' : 'btn-outline'}" onclick="ChecklistFormPage.setFaseInicial('entrada')">
-                <span class="material-symbols-rounded">login</span> COMEÇAR PELO RECEBIMENTO
+                <span class="material-symbols-rounded">login</span> RECEBIMENTO
               </button>
               <button id="btnSaidaFase" class="btn ${this.fase === 'saida' ? 'btn-primary' : 'btn-outline'}" onclick="ChecklistFormPage.setFaseInicial('saida')">
-                <span class="material-symbols-rounded">logout</span> COMEÇAR PELA ENTREGA
+                <span class="material-symbols-rounded">logout</span> ENTREGA
               </button>
             </div>
           </div>
-          ` : ''}
 
           ${this.modo === 'troca' ? this.renderAbas() : ''}
 
@@ -464,7 +462,8 @@ const ChecklistFormPage = {
         const observer = new MutationObserver(mutations => {
           mutations.forEach(m => {
             if (m.attributeName === 'src') {
-              if (sigPreview.src && sigPreview.src.startsWith('data:')) {
+              const src = sigPreview.getAttribute('src');
+              if (src && src.trim() !== '' && src !== 'null' && src !== 'undefined') {
                 placeholder.style.display = 'none';
                 sigPreview.style.display = 'block';
               } else {
@@ -707,7 +706,7 @@ const ChecklistFormPage = {
             }
             cat = cat.replace(/^(entrada|saida|unico)_/, '');
           } else {
-             if (this.fase !== 'entrada' && !this.isRetomar) isCurrentPhase = false;
+             isCurrentPhase = true;
           }
 
           if (!isCurrentPhase) return;
@@ -796,6 +795,14 @@ const ChecklistFormPage = {
   getVal(id) {
     const el = document.getElementById(id);
     return el ? el.value.trim() : '';
+  },
+
+  getSignatureData(id) {
+    const el = document.getElementById(id);
+    if (!el) return undefined;
+    const src = el.getAttribute('src');
+    if (src && src.trim() !== '' && src !== 'null' && src !== 'undefined') return src;
+    return undefined;
   },
 
   syncField(el, suffix) {
@@ -1233,8 +1240,8 @@ const ChecklistFormPage = {
       outros_defeitos: this.getVal('outrosDefeitos'),
       obs: this.getVal('obsGerais'),
       servicos: this.getVal('servicosRealizados'),
-      assinatura: document.getElementById('signaturePreview')?.src?.startsWith('data:') ? document.getElementById('signaturePreview').src : null,
-      assinatura_vistoriador: document.getElementById('signaturePreview_vistoriador')?.src?.startsWith('data:') ? document.getElementById('signaturePreview_vistoriador').src : null
+      assinatura: this.getSignatureData('signaturePreview'),
+      assinatura_vistoriador: this.getSignatureData('signaturePreview_vistoriador')
     };
 
     const data = {
@@ -1362,8 +1369,8 @@ const ChecklistFormPage = {
       entrada_outros_defeitos: this.getVal('outrosDefeitos'),
       entrada_obs: this.getVal('obsGerais'),
       entrada_servicos: this.getVal('servicosRealizados'),
-      entrada_assinatura: document.getElementById('signaturePreview')?.src?.startsWith('data:') ? document.getElementById('signaturePreview').src : null,
-      entrada_assinatura_vistoriador: document.getElementById('signaturePreview_vistoriador')?.src?.startsWith('data:') ? document.getElementById('signaturePreview_vistoriador').src : null
+      entrada_assinatura: this.getSignatureData('signaturePreview'),
+      entrada_assinatura_vistoriador: this.getSignatureData('signaturePreview_vistoriador')
     };
 
     // Empréstimo data if troca mode
@@ -1451,8 +1458,8 @@ const ChecklistFormPage = {
       saida_outros_defeitos: this.getVal('outrosDefeitos'),
       saida_obs: this.getVal('obsGerais'),
       saida_servicos: this.getVal('servicosRealizados'),
-      saida_assinatura: document.getElementById('signaturePreview')?.src?.startsWith('data:') ? document.getElementById('signaturePreview').src : null,
-      saida_assinatura_vistoriador: document.getElementById('signaturePreview_vistoriador')?.src?.startsWith('data:') ? document.getElementById('signaturePreview_vistoriador').src : null,
+      saida_assinatura: this.getSignatureData('signaturePreview'),
+      saida_assinatura_vistoriador: this.getSignatureData('signaturePreview_vistoriador'),
       motorista_nome: this.getVal('nomeCondutor'),
       motorista_cnh: this.getVal('cnhCondutor')
     };
